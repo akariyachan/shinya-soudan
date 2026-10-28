@@ -1117,8 +1117,8 @@ async function playEpilogue() {
   const epiPeople = async (group, ids, suffix) => {
     for (const id of ids) {
       const p = group && group[id], v = STORY.visitors[id];
-      if (!p || !v) continue;
-      const r = G.res[id] || 'mid';
+      if (!p || !v || !G.res[id]) continue; // その周に来なかった人（七海ルートの遥など）は飛ばす
+      const r = G.res[id];
       G.seg = { type: 'epi', id }; G.revealed.add(id);
       logSec(vName(v) + suffix);
       setPortrait(id, (v.outcome && v.outcome[r]) || null);
