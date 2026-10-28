@@ -122,7 +122,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 #nextMark{position:absolute;right:14px;bottom:6px;font-size:12px;color:var(--mustard);opacity:0;animation:blink 1s infinite}
 #textbox.done #nextMark{opacity:1}
 @keyframes blink{50%{opacity:.2}}
-#app.choosing #textbox{min-height:0;padding:12px 14px 10px;opacity:.92}
+#app.choosing #textbox{min-height:0;padding:19px 14px 10px;opacity:.92}
 #app.choosing #textbox #text{font-size:13.5px;line-height:1.6;min-height:0;max-height:4.9em;overflow:hidden}
 #app.choosing #nextMark{display:none}
 #choices{display:none;flex-direction:column;gap:8px;margin-top:8px}
@@ -137,6 +137,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 
 /* オーバーレイ共通 */
 .screen{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+#title,#ending{overflow-y:auto;-webkit-overflow-scrolling:touch}
+#ending{justify-content:flex-start}
+#ending:before,#ending:after{content:"";flex:1 0 12px}
 .btn{display:block;min-width:220px;padding:13px 22px;margin:8px auto;font-size:17px;letter-spacing:.28em;border-radius:4px;border:1px solid #f0cf7a;background:linear-gradient(180deg,#b8892a,#8d6418);color:#fff7e0;text-shadow:0 1px 0 #4a3008;box-shadow:inset 0 0 0 2px rgba(42,26,16,.55),0 4px 0 #4a3008,0 8px 18px rgba(0,0,0,.5)}
 .btn:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px rgba(42,26,16,.55),0 1px 0 #4a3008}
 .btn.sub{background:linear-gradient(180deg,#3e6b68,#2b4a48);border-color:#8fbab2;box-shadow:inset 0 0 0 2px rgba(20,30,30,.5),0 4px 0 #17282a,0 8px 18px rgba(0,0,0,.5)}
@@ -273,16 +276,23 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   #bottom{flex:1 1 0;height:calc(100% - 38px);display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px 8px 0}
   #textbox{min-height:120px}
   #text{font-size:15.5px;line-height:1.75}
-  #app.choosing #bottom{justify-content:flex-start}
+  #app.choosing #bottom{justify-content:flex-start;overflow-y:auto;padding-top:16px}
   #app.choosing #choices{display:grid;grid-template-columns:1fr 1fr;gap:7px}
   .card{font-size:13.5px;padding:8px 10px 8px 20px;line-height:1.45}
   .hint{grid-column:1/-1}
-  .logo{margin-top:4vh}
-  .logo h1{font-size:40px}
-  .tdesc{margin-top:8px;padding:6px 12px;font-size:12.5px}
+  .logo{margin-top:6px}
+  .logo h1{font-size:36px;margin:4px 0 2px}
+  .tdesc{margin-top:6px;padding:4px 12px;font-size:12.5px;line-height:1.7}
   .tmenu{max-width:600px;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px;margin-bottom:10px}
-  .tmenu .btn{min-width:200px;margin:4px}
+  .tmenu .btn{min-width:200px;margin:4px;padding:10px 22px}
   .tmenu .seen{flex:0 0 100%;margin-top:6px}
+  .seen ul,.seen ul.r3{grid-template-columns:repeat(3,auto);justify-content:center;gap:2px 18px}
+  #ending .seen{max-width:600px}
+  #ending h2{margin:6px 0;font-size:32px}
+  #ending .quote{margin:4px auto 14px;max-width:560px;font-size:15px;line-height:1.8}
+  #ending .route{margin:-6px 0 8px}
+  #ending .seen{margin-top:6px;padding:6px 10px}
+  #ending .eb .btn{margin:6px auto 4px}
   #summary{flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:0 10px}
   #summary h2,#summary .sub{flex:0 0 100%;text-align:center}
   .srow{max-width:360px}

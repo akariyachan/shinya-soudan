@@ -293,7 +293,7 @@
           { time: '2:10' },
           { f: 'neutral', say: '' },
           '窓の外では、満月が、さっきよりまた少し高くなっていた。坂の下は真っ暗なのに、月だけが、何も知らない顔でこうこうと照っている。',
-          { if: 'djroute', go: 'stay', then: [], else: [] },
+          { if: 'djroute', then: [{ go: 'stay' }] },
           { go: 'leave' },
         ],
 
