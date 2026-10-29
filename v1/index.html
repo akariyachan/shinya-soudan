@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e140d">
+<title>深夜の相談室</title>
+<meta name="description" content="真夜中だけ開く昭和レトロな相談室。眠れない人の話を聞いて、近すぎず遠すぎない返事を選ぶ、五夜の物語。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232a1a10'/%3E%3Cpath d='M40 10a16 16 0 1 0 14 22 13 13 0 1 1-14-22z' fill='%23d4a53a'/%3E%3Cpath d='M14 36h26v6a10 10 0 0 1-10 10h-6a10 10 0 0 1-10-10z' fill='%23f1e4c8'/%3E%3Cpath d='M40 39h4a4 4 0 0 1 0 8h-4' fill='none' stroke='%23f1e4c8' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --mustard:#d4a53a; --mustard-d:#a97f22; --choco:#2a1a10; --choco2:#3b2618; --teal:#4f7f7a; --teal-l:#7fb0a8;
+  --enji:#8c2f39; --enji-l:#b84a55; --cream:#f1e4c8; --paper:#f4ead2; --ink:#1b130d;
+  --lamp:rgba(212,165,58,.55);
+  --serif:"Hiragino Mincho ProN","Hiragino Mincho Pro","Yu Mincho","YuMincho","Noto Serif JP","Noto Serif CJK JP","Source Han Serif JP","BIZ UDPMincho","MS PMincho",serif;
+  --ps:200px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#120c08;color:var(--cream);font-family:var(--serif);overflow:hidden;overscroll-behavior:none}
+button{font-family:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+#app{position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none}
+#bg{position:absolute;inset:-12px;background:#1a110b url(../assets/bg_room.jpg) center 30%/cover no-repeat;filter:brightness(.42) saturate(.85) blur(1.5px);transition:filter 1.2s ease}
+#app.room #bg{filter:brightness(.78) saturate(.95) blur(0)}
+#app.morning #bg{filter:brightness(1.05) saturate(.7) sepia(.35) blur(0)}
+#app.titlemode #bg{filter:brightness(.62) saturate(.9) blur(0)}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(0,0,0,0) 45%,rgba(10,6,3,.72) 100%);z-index:5}
+#grain{position:absolute;inset:-100%;width:300%;height:300%;pointer-events:none;z-index:60;opacity:.085;mix-blend-mode:overlay;animation:grain 1.1s steps(8) infinite}
+@keyframes grain{0%{transform:translate(0,0)}12%{transform:translate(-4%,3%)}25%{transform:translate(3%,-5%)}37%{transform:translate(-6%,-2%)}50%{transform:translate(5%,4%)}62%{transform:translate(-2%,6%)}75%{transform:translate(6%,-1%)}87%{transform:translate(-5%,-6%)}100%{transform:translate(0,0)}}
+#scratch{position:absolute;inset:0;pointer-events:none;z-index:61;opacity:.05;background:repeating-linear-gradient(90deg,transparent 0 37vw,rgba(255,240,210,.6) 37vw calc(37vw + 1px),transparent calc(37vw + 1px) 81vw);animation:scratch 7s steps(14) infinite}
+@keyframes scratch{0%{transform:translateX(0)}30%{transform:translateX(11vw)}55%{transform:translateX(-23vw)}80%{transform:translateX(6vw)}100%{transform:translateX(0)}}
+
+/* 天気・演出レイヤー */
+#fx{position:absolute;inset:0;pointer-events:none;z-index:4}
+#fx>div{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
+#fx .rain{background:repeating-linear-gradient(104deg,transparent 0 22px,rgba(170,200,220,.16) 22px 23px,transparent 23px 47px);background-size:120px 120px;animation:rain .45s linear infinite}
+#fx .rain2{background:repeating-linear-gradient(100deg,transparent 0 31px,rgba(170,200,220,.10) 31px 32px,transparent 32px 70px);background-size:160px 160px;animation:rain .7s linear infinite}
+@keyframes rain{to{background-position:-28px 120px}}
+#fx .snow{background-image:radial-gradient(2px 2px at 20px 30px,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 80px 90px,rgba(255,255,255,.7),transparent),radial-gradient(2.5px 2.5px at 140px 40px,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 60px 160px,rgba(255,255,255,.7),transparent),radial-gradient(2px 2px at 170px 130px,rgba(255,255,255,.65),transparent);background-size:200px 200px;animation:snow 9s linear infinite}
+#fx .snow2{background-image:radial-gradient(3px 3px at 50px 60px,rgba(255,255,255,.5),transparent),radial-gradient(2px 2px at 190px 200px,rgba(255,255,255,.55),transparent),radial-gradient(2.5px 2.5px at 120px 150px,rgba(255,255,255,.45),transparent);background-size:260px 260px;animation:snow 14s linear infinite}
+@keyframes snow{from{background-position:0 0}to{background-position:40px 400px}}
+#fx .dark{background:rgba(3,3,8,.78)}
+#fx .candle{background:radial-gradient(circle at 50% 78%,rgba(255,170,70,.30) 0,rgba(255,140,40,.12) 22%,rgba(0,0,0,0) 48%);mix-blend-mode:screen;animation:flicker 2.3s infinite}
+@keyframes flicker{0%,100%{opacity:1}23%{opacity:.82}41%{opacity:.95}57%{opacity:.76}78%{opacity:.92}}
+#fx .dawn{background:linear-gradient(180deg,rgba(150,170,210,.30) 0%,rgba(240,190,140,.22) 55%,rgba(255,220,170,.12) 100%);mix-blend-mode:screen}
+#app.w-rain #fx .rain,#app.w-rain #fx .rain2,#app.w-snow #fx .snow,#app.w-snow #fx .snow2,#app.fx-dark #fx .dark,#app.fx-dawn #fx .dawn{opacity:1}
+#app.fx-candle #fx .candle{opacity:1}
+#app.fx-dark #bg{filter:brightness(.16) saturate(.5) blur(1.5px)}
+
+/* ゲーム画面 */
+#game{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#hud{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:42px;padding:0 8px;background:linear-gradient(180deg,rgba(20,12,7,.92),rgba(20,12,7,.55));border-bottom:1px solid rgba(212,165,58,.25);position:relative;z-index:3}
+.back{color:var(--mustard);text-decoration:none;font-size:12px;letter-spacing:.05em;white-space:nowrap;padding:6px 4px;opacity:.9}
+.nightinfo{flex:1;display:flex;justify-content:center;align-items:baseline;gap:10px;font-size:14px;letter-spacing:.2em;color:var(--cream);text-shadow:0 0 6px rgba(0,0,0,.8)}
+#hudNight{color:var(--mustard)}
+#hudClock{font-variant-numeric:tabular-nums;letter-spacing:.08em;font-size:15px;padding:1px 7px;border:1px solid rgba(212,165,58,.45);border-radius:3px;background:rgba(0,0,0,.35);color:#f6d98a;text-shadow:0 0 6px rgba(246,190,80,.6)}
+.hudbtns{display:flex;gap:4px}
+.ibtn{width:32px;height:32px;border-radius:50%;border:1px solid rgba(212,165,58,.45);background:rgba(42,26,16,.85);display:grid;place-items:center;padding:0}
+.ibtn svg{width:18px;height:18px;fill:none;stroke:var(--mustard);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ibtn.muted svg .wave{display:none}
+.ibtn.muted svg .x{display:inline}
+.ibtn svg .x{display:none}
+
+#stage{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 10px 4px;position:relative;cursor:pointer}
+#pwrap{position:relative;width:var(--ps);height:var(--ps);transition:width .35s ease,height .35s ease,opacity .6s ease}
+#portrait{position:absolute;inset:0;border-radius:18px;overflow:hidden;border:3px solid #6b4a22;box-shadow:0 0 0 1px #000,0 0 26px 6px var(--lamp),0 8px 24px rgba(0,0,0,.7);transition:box-shadow 1s ease,transform .8s cubic-bezier(.3,1.4,.5,1),opacity .6s;background:#1b2238}
+#portrait img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .8s ease}
+#portrait .cheek{position:absolute;inset:0;opacity:0;transition:opacity .9s ease;background:radial-gradient(circle at 34% 60%,rgba(255,90,90,.55) 0,rgba(255,90,90,0) 15%),radial-gradient(circle at 66% 60%,rgba(255,90,90,.55) 0,rgba(255,90,90,0) 15%);mix-blend-mode:soft-light}
+#portrait .shade{position:absolute;inset:0;opacity:0;transition:opacity .9s ease;background:linear-gradient(180deg,rgba(10,15,40,.6) 0%,rgba(10,15,40,.1) 55%,rgba(10,15,40,.35) 100%)}
+#portrait .tint{position:absolute;inset:0;opacity:0;transition:opacity .9s ease}
+#portrait .phonebadge{display:none;position:absolute;left:6px;bottom:6px;font-size:11px;padding:2px 7px 2px 22px;border-radius:10px;background:rgba(20,10,5,.75);color:var(--cream);letter-spacing:.1em}
+#portrait .phonebadge:before{content:"";position:absolute;left:6px;top:50%;width:11px;height:11px;margin-top:-6px;background:var(--enji-l);border-radius:3px 3px 5px 5px}
+#portrait.phone{border-color:#5a1f25}
+#portrait.phone img{filter:sepia(.55) saturate(.6) brightness(.85) contrast(1.05)!important}
+#portrait.phone .phonebadge{display:block}
+#portrait.phone{animation:phonewob 4s ease-in-out infinite}
+@keyframes phonewob{0%,100%{transform:rotate(-.6deg)}50%{transform:rotate(.6deg)}}
+#pwrap.none{opacity:0;pointer-events:none}
+/* 表情 */
+#portrait.f-tense img{filter:saturate(.85) contrast(1.06) brightness(.95)} #portrait.f-tense .shade{opacity:.35}
+#portrait.f-sad img{filter:brightness(.8) saturate(.62)} #portrait.f-sad{transform:rotate(-1.6deg)} #portrait.f-sad .shade{opacity:.6}
+#portrait.f-tear img{filter:brightness(.78) saturate(.55)} #portrait.f-tear{transform:rotate(-2deg) translateY(2px)} #portrait.f-tear .shade{opacity:.75} #portrait.f-tear .tint{opacity:.35;background:linear-gradient(180deg,rgba(80,120,190,.0),rgba(80,120,190,.5))}
+#portrait.f-smile img{filter:brightness(1.07) saturate(1.08)} #portrait.f-smile{transform:rotate(1deg)} #portrait.f-smile .cheek{opacity:.45}
+#portrait.f-warm img{filter:brightness(1.1) saturate(1.1) sepia(.12)} #portrait.f-warm .cheek{opacity:.55} #portrait.f-warm .tint{opacity:.35;background:radial-gradient(circle at 50% 40%,rgba(255,200,110,.45),rgba(255,200,110,0) 70%)}
+#portrait.f-laugh img{filter:brightness(1.13) saturate(1.15)} #portrait.f-laugh{transform:rotate(2deg) scale(1.02)} #portrait.f-laugh .cheek{opacity:.55}
+#portrait.f-blush img{filter:brightness(1.05) saturate(1.05)} #portrait.f-blush .cheek{opacity:1}
+#portrait.f-shy img{filter:brightness(1.02)} #portrait.f-shy{transform:rotate(-2deg)} #portrait.f-shy .cheek{opacity:.8}
+#portrait.f-surprise img{filter:brightness(1.1) contrast(1.05)} #portrait.f-surprise{transform:scale(1.045)}
+#portrait.f-angry img{filter:contrast(1.15) saturate(1.2) brightness(.95)} #portrait.f-angry .tint{opacity:.4;background:rgba(160,30,30,.35);mix-blend-mode:multiply}
+#portrait.f-angry{animation:shake .35s 2}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+#portrait.f-closed img{filter:brightness(.94) saturate(.9)} #portrait.f-closed .tint{opacity:.3;background:rgba(40,40,80,.3)}
+#portrait.f-sleepy img{filter:brightness(.85) saturate(.8) blur(.4px)} #portrait.f-sleepy{transform:rotate(3deg)}
+/* メーター */
+#meter{position:absolute;right:-12px;top:-14px;width:74px;height:46px;transition:opacity .5s;filter:drop-shadow(0 2px 3px rgba(0,0,0,.8))}
+#meter.off{opacity:0}
+#meter svg{width:100%;height:100%;overflow:visible}
+#needle{transform-origin:40px 42px;transition:transform 1.1s cubic-bezier(.25,1.8,.45,.9)}
+#meter.bump{animation:bump .6s ease}
+@keyframes bump{30%{transform:scale(1.18)}}
+#pname{margin-top:9px;display:flex;align-items:baseline;gap:8px;font-size:18px;letter-spacing:.18em;text-shadow:0 0 2px #000,0 0 8px #000,1px 1px 0 #3b2618;min-height:24px}
+#plabel{font-size:11px;letter-spacing:.12em;color:#cdbb95;opacity:.9}
+#pface{margin-top:4px;display:flex;align-items:center;gap:6px;min-height:26px;padding:2px 12px 2px 4px;border-radius:14px;background:rgba(20,12,7,.65);border:1px solid rgba(212,165,58,.25);transition:opacity .4s}
+#pface.off{opacity:0}
+#faceIcon{width:22px;height:22px;display:block}
+#faceIcon svg{width:22px;height:22px;display:block}
+#faceSay{font-size:13px;letter-spacing:.08em;color:#f3e1b5}
+#pface.pop{animation:pop .5s ease}
+@keyframes pop{40%{transform:scale(1.1)}}
+
+#bottom{flex:0 0 auto;padding:0 10px 12px;position:relative;z-index:2}
+#textbox{position:relative;min-height:150px;padding:20px 16px 26px;border-radius:8px;background:linear-gradient(180deg,rgba(38,24,14,.94),rgba(24,15,9,.96));border:1px solid #7a5a2a;box-shadow:inset 0 0 0 3px rgba(20,12,7,.9),inset 0 0 0 4px rgba(212,165,58,.35),0 6px 20px rgba(0,0,0,.6);cursor:pointer}
+#speaker{position:absolute;left:12px;top:-13px;padding:3px 14px;font-size:14px;letter-spacing:.2em;background:var(--enji);color:var(--cream);border:1px solid #c26a5a;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.6);text-shadow:0 1px 0 #3a0f14}
+#speaker.me{background:var(--teal);border-color:#8fbab2;text-shadow:0 1px 0 #1d3533}
+#speaker.radio{background:#5b4a2a;border-color:var(--mustard)}
+#speaker.dj{background:#a97f22;border-color:#f0cf7a;color:#2a1a10;text-shadow:none}
+#speaker.cat{background:#2a2a35;border-color:#8a8aa0}
+#speaker.none{display:none}
+#text{font-size:16.5px;line-height:1.85;letter-spacing:.06em;white-space:pre-wrap;word-break:break-word;min-height:3.7em;text-shadow:0 1px 2px #000}
+#text.narr{color:#e2d5b8}
+#text.radio{color:#f6d98a;font-style:italic}
+#nextMark{position:absolute;right:14px;bottom:6px;font-size:12px;color:var(--mustard);opacity:0;animation:blink 1s infinite}
+#textbox.done #nextMark{opacity:1}
+@keyframes blink{50%{opacity:.2}}
+#app.choosing #textbox{min-height:0;padding:19px 14px 10px;opacity:.92}
+#app.choosing #textbox #text{font-size:13.5px;line-height:1.6;min-height:0;max-height:4.9em;overflow:hidden}
+#app.choosing #nextMark{display:none}
+#choices{display:none;flex-direction:column;gap:8px;margin-top:8px}
+#app.choosing #choices{display:flex}
+.hint{font-size:11.5px;color:#d9c79e;letter-spacing:.1em;text-align:center;opacity:.9;padding:0 6px}
+.card{position:relative;text-align:left;font-size:15px;line-height:1.55;letter-spacing:.04em;padding:11px 14px 11px 22px;border-radius:6px;border:1px solid #b99a62;background:linear-gradient(180deg,#f6ecd4,#e9dab8);color:var(--ink);box-shadow:0 3px 0 #8b6a3a,0 6px 14px rgba(0,0,0,.45);opacity:0;transform:translateY(24px);animation:cardin .45s cubic-bezier(.2,1.2,.4,1) forwards}
+.card:before{content:"";position:absolute;left:8px;top:10px;bottom:10px;width:4px;border-radius:2px;background:var(--mustard-d)}
+.card:active{transform:translateY(2px);box-shadow:0 1px 0 #8b6a3a,0 3px 8px rgba(0,0,0,.45)}
+.card.picked{background:linear-gradient(180deg,#fff6dc,#f2dfae);box-shadow:0 0 0 2px var(--mustard),0 0 18px rgba(212,165,58,.7)}
+.card.gone{opacity:0!important;transform:translateY(10px)!important;transition:all .3s}
+@keyframes cardin{to{opacity:1;transform:none}}
+
+/* オーバーレイ共通 */
+.screen{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+#title,#ending{overflow-y:auto;-webkit-overflow-scrolling:touch}
+#ending{justify-content:flex-start}
+#ending:before,#ending:after{content:"";flex:1 0 12px}
+.btn{display:block;min-width:220px;padding:13px 22px;margin:8px auto;font-size:17px;letter-spacing:.28em;border-radius:4px;border:1px solid #f0cf7a;background:linear-gradient(180deg,#b8892a,#8d6418);color:#fff7e0;text-shadow:0 1px 0 #4a3008;box-shadow:inset 0 0 0 2px rgba(42,26,16,.55),0 4px 0 #4a3008,0 8px 18px rgba(0,0,0,.5)}
+.btn:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px rgba(42,26,16,.55),0 1px 0 #4a3008}
+.btn.sub{background:linear-gradient(180deg,#3e6b68,#2b4a48);border-color:#8fbab2;box-shadow:inset 0 0 0 2px rgba(20,30,30,.5),0 4px 0 #17282a,0 8px 18px rgba(0,0,0,.5)}
+.btn:disabled{opacity:.35;filter:grayscale(.6)}
+.btn.small{min-width:0;font-size:14px;padding:9px 16px;letter-spacing:.15em;display:inline-block;margin:6px}
+
+/* タイトル */
+#title{justify-content:flex-start;padding-top:max(14px,env(safe-area-inset-top))}
+#title .back{position:absolute;left:10px;top:max(8px,env(safe-area-inset-top))}
+#title .tbtns{position:absolute;right:10px;top:max(6px,env(safe-area-inset-top));display:flex;gap:6px}
+.logo{margin-top:12vh;text-align:center}
+.logo .small{font-size:12px;letter-spacing:.5em;color:var(--mustard);opacity:.9;text-shadow:0 0 6px #000}
+.logo h1{margin:10px 0 6px;font-size:clamp(38px,11vw,56px);font-weight:700;letter-spacing:.22em;color:#f8e7bd;text-indent:.22em;
+  text-shadow:0 0 1px #2a1a10,2px 2px 0 #8c2f39,3px 3px 0 #2a1a10,0 0 18px rgba(246,190,80,.55),0 0 40px rgba(246,190,80,.25)}
+.logo .lamp{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffd27a;box-shadow:0 0 12px 4px rgba(255,190,90,.8);margin:0 10px;vertical-align:middle;animation:flicker 3s infinite}
+.logo .en{font-size:11px;letter-spacing:.6em;color:#cdbb95;opacity:.8}
+.tdesc{margin:18px auto 0;max-width:340px;font-size:13.5px;line-height:1.9;text-align:center;letter-spacing:.08em;color:#ecdcb8;text-shadow:0 1px 3px #000;background:rgba(20,12,7,.55);padding:10px 14px;border-radius:6px;border:1px solid rgba(212,165,58,.25)}
+.tmenu{margin-top:auto;margin-bottom:max(22px,env(safe-area-inset-bottom));width:100%;max-width:360px;text-align:center}
+.seen{margin:14px auto 0;font-size:12px;letter-spacing:.1em;color:#d8c69c;background:rgba(20,12,7,.7);border:1px solid rgba(212,165,58,.25);border-radius:6px;padding:8px 10px;text-align:left}
+.seen b{display:block;font-weight:normal;color:var(--mustard);margin-bottom:4px;letter-spacing:.3em;text-align:center}
+.seen ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}
+.seen li:before{content:"◉ ";color:var(--mustard)}
+.seen li.no{opacity:.5}
+.seen li.no:before{content:"○ ";color:#888}
+.seen .b2{margin-top:8px}
+.seen ul.r3{grid-template-columns:1fr}
+.seen .unseen{margin:8px 0 0;text-align:center;font-style:italic;color:#c9b07a;letter-spacing:.2em;font-size:11.5px}
+#ending .route{font-size:13px;letter-spacing:.2em;color:#d8c69c;margin:-10px 0 18px;opacity:0;animation:fadein 1.6s 2.2s forwards}
+
+/* 夜のはじまり：ラジオのチューニング */
+#nightcard{background:radial-gradient(ellipse at 50% 45%,rgba(40,26,14,.9),rgba(8,5,3,.98));cursor:pointer}
+.radio{width:min(320px,86vw);padding:16px 16px 14px;border-radius:14px;background:linear-gradient(180deg,#6b4423,#4a2d16);border:2px solid #2a1a10;box-shadow:inset 0 0 0 2px #8a5e33,0 10px 30px rgba(0,0,0,.8)}
+.dial{position:relative;height:58px;border-radius:6px;background:linear-gradient(180deg,#f3dfa8,#e0c27a);box-shadow:inset 0 0 12px rgba(120,70,10,.6),0 0 18px rgba(255,200,100,.35);overflow:hidden}
+.dial .scale{position:absolute;left:10px;right:10px;top:8px;display:flex;justify-content:space-between;font-size:11px;color:#4a2d16;font-family:Georgia,serif;letter-spacing:0}
+.dial .ticks{position:absolute;left:10px;right:10px;top:26px;height:10px;background:repeating-linear-gradient(90deg,#4a2d16 0 1px,transparent 1px 8px)}
+.dial .lbl{position:absolute;left:10px;bottom:5px;font-size:10px;color:#6a3d16;letter-spacing:.2em}
+.dial .ndl{position:absolute;top:4px;bottom:4px;width:2px;background:#b3202a;box-shadow:0 0 6px rgba(200,30,40,.8);left:8%}
+#nightcard.go .dial .ndl{animation:tune 1.9s cubic-bezier(.3,.7,.2,1) forwards}
+@keyframes tune{0%{left:8%}35%{left:70%}55%{left:28%}72%{left:47%}86%{left:40%}100%{left:42.5%}}
+.knobs{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.knob{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#d6c08a,#6b5428);border:2px solid #2a1a10}
+.grille{flex:1;margin:0 12px;height:30px;border-radius:4px;background:repeating-linear-gradient(90deg,#2a1a10 0 2px,#5a3a1c 2px 5px)}
+.jingle{margin-top:22px;text-align:center;opacity:0}
+#nightcard.go .jingle{animation:fadein 1s 1.6s forwards}
+.jingle .station{font-size:12px;letter-spacing:.4em;color:var(--mustard)}
+.jingle .nt{font-size:40px;letter-spacing:.3em;margin:10px 0 4px;color:#f8e7bd;text-shadow:2px 2px 0 #8c2f39,0 0 20px rgba(246,190,80,.5)}
+.jingle .ns{font-size:16px;letter-spacing:.2em;color:#e8d6ae}
+.jingle .rec{display:inline-block;margin-top:16px;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle,#8c2f39 0 9px,#f1e4c8 9px 10px,#8c2f39 10px 15px,#111 15px 16px,#1d1d1d 16px 20px,#111 20px 21px,#1d1d1d 21px 25px,#111 25px 29px);animation:spin 2.5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadein{to{opacity:1}}
+
+/* 夜明け：結果まとめ */
+#summary{background:linear-gradient(180deg,rgba(25,30,48,.94),rgba(48,34,30,.96));overflow-y:auto;justify-content:flex-start;padding-top:max(30px,env(safe-area-inset-top))}
+#summary h2{font-weight:normal;font-size:22px;letter-spacing:.35em;margin:14px 0 4px;color:#f8e7bd;text-shadow:2px 2px 0 #3b2618}
+#summary .sub{font-size:12px;letter-spacing:.2em;color:#cdbb95;margin-bottom:16px}
+.srow{display:flex;align-items:center;gap:14px;width:100%;max-width:380px;padding:12px;margin:6px 0;border-radius:10px;background:rgba(20,12,7,.6);border:1px solid rgba(212,165,58,.3);opacity:0;animation:fadein .7s forwards}
+.srow .av{width:72px;height:72px;flex:0 0 auto;border-radius:12px;overflow:hidden;border:2px solid #6b4a22;position:relative}
+.srow .av img{width:100%;height:100%;object-fit:cover}
+.srow .nm{font-size:16px;letter-spacing:.15em}
+.srow .lb{font-size:11px;color:#cdbb95;letter-spacing:.1em}
+.srow .fc{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:14px;color:#f3e1b5}
+.srow .fc svg{width:22px;height:22px}
+.srow .tag{font-size:11px;letter-spacing:.2em;color:var(--mustard);margin-top:3px}
+#summary .btn{margin-top:20px;margin-bottom:30px}
+
+/* 手紙 */
+#letter{background:rgba(10,7,4,.86);padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))}
+.lhead{width:100%;max-width:520px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.lhead .who{font-size:15px;letter-spacing:.2em;color:#f3e1b5}
+.lhead .who small{display:block;font-size:11px;color:#cdbb95;letter-spacing:.15em}
+.paper{position:relative;width:100%;max-width:520px;flex:1 1 auto;min-height:0;border-radius:4px;background:#f4ead2;color:#26303f;box-shadow:0 10px 40px rgba(0,0,0,.8),inset 0 0 60px rgba(150,110,50,.25);animation:unfold .7s cubic-bezier(.2,1,.3,1)}
+@keyframes unfold{from{transform:perspective(800px) rotateX(55deg) translateY(30px);opacity:0}}
+.paper .ltext{position:absolute;inset:14px;overflow:auto;-webkit-overflow-scrolling:touch;font-size:17px;letter-spacing:.12em;line-height:2.1;user-select:text;-webkit-user-select:text}
+.paper.vert .ltext{writing-mode:vertical-rl;padding:18px 12px 18px 16px;line-height:2.15;background-image:repeating-linear-gradient(to left,transparent 0,transparent calc(2.15em - 1px),rgba(140,47,57,.38) calc(2.15em - 1px),rgba(140,47,57,.38) 2.15em);background-attachment:local;background-position:right 12px top 0}
+.paper.horz .ltext{padding:14px 18px;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(2.1em - 1px),rgba(140,47,57,.3) calc(2.1em - 1px),rgba(140,47,57,.3) 2.1em);background-attachment:local}
+.ltext .sign{display:block;text-align:end;margin-top:1em;font-size:1.05em}
+.paper.vert .ltext .sign{margin-top:0;margin-right:1.2em;text-align:end}
+.paper.vert .ltext p,.paper.horz .ltext p{margin:0}
+.lfoot{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.lfoot .note{font-size:11px;color:#bba982;letter-spacing:.1em}
+/* 便箋の個性 */
+.paper.st-round{background:#fbf1e2;color:#2b3c78}
+.paper.st-neat{background:#f7f2e4;color:#1e1e22;letter-spacing:.18em}
+.paper.st-neat .ltext{letter-spacing:.2em}
+.paper.st-pencil{background:#f1ede2;color:#575756}
+.paper.st-pencil .ltext{text-shadow:0 0 .6px #666}
+.paper.st-shaky{background:#efe2c4;color:#4a2c18}
+.paper.st-shaky .ch{display:inline-block}
+.paper.st-receipt{background:#fbfbf7;color:#3c3c48;max-width:330px;border-radius:0;box-shadow:0 10px 40px rgba(0,0,0,.8);-webkit-mask:linear-gradient(#000,#000);}
+.paper.st-receipt .ltext{font-size:16px}
+.paper.st-staff{background:#f6f0e0;color:#2d2240}
+.paper.st-staff.vert .ltext{background-image:repeating-linear-gradient(to left,transparent 0,transparent calc(2.15em - 1px),rgba(60,60,90,.28) calc(2.15em - 1px),rgba(60,60,90,.28) 2.15em)}
+.paper.st-child{background:#fffaf0;color:#d2502e}
+.paper.st-child .ltext{font-size:20px;letter-spacing:.2em}
+.paper.st-child .ltext p:nth-child(3n+2){color:#2f7ab0}
+.paper.st-child .ltext p:nth-child(3n+3){color:#3d8a3a}
+.paper.st-brush{background:#efe6d0;color:#0d0d10}
+.paper.st-brush .ltext{font-weight:600;letter-spacing:.16em}
+.paper.st-sketch{background:#f2efe6;color:#36506b}
+.paper.st-dj{background:#f7ecd0;color:#3a2412}
+.paper.st-dj:before{content:"FMあさなぎ　ナツメの真夜中便";position:absolute;top:-1px;left:0;right:0;font-size:10px;letter-spacing:.4em;text-align:center;padding:3px;background:var(--enji);color:var(--cream);border-radius:4px 4px 0 0}
+.paper.st-dj .ltext{top:24px}
+.paper.st-ohya{background:#efe2c4;color:#4a2c18}
+
+/* エンディング */
+#ending{background:radial-gradient(ellipse at 50% 35%,rgba(70,48,30,.75),rgba(8,5,3,.97));text-align:center}
+#ending .lbl{font-size:12px;letter-spacing:.5em;color:var(--mustard)}
+#ending h2{font-size:clamp(30px,9vw,44px);font-weight:700;letter-spacing:.25em;margin:16px 0;color:#f8e7bd;text-shadow:2px 2px 0 #8c2f39,0 0 24px rgba(246,190,80,.5);opacity:0;animation:fadein 1.6s .4s forwards}
+#ending .quote{max-width:340px;margin:10px auto 26px;font-size:16px;line-height:2;letter-spacing:.12em;color:#efdfbd;opacity:0;animation:fadein 1.6s 1.4s forwards}
+#ending .seen{opacity:0;animation:fadein 1s 2.2s forwards;max-width:340px}
+#ending .eb{opacity:0;animation:fadein 1s 2.6s forwards}
+#ending.instant *{animation-delay:0s!important;animation-duration:.01s!important}
+
+/* パネル */
+.panel{position:absolute;inset:0;z-index:50;background:rgba(8,5,3,.7);display:flex;align-items:center;justify-content:center;padding:16px}
+.panel .box{width:100%;max-width:440px;max-height:86%;display:flex;flex-direction:column;border-radius:8px;background:linear-gradient(180deg,#2e1e12,#1d130b);border:1px solid #7a5a2a;box-shadow:inset 0 0 0 3px #1b120a,inset 0 0 0 4px rgba(212,165,58,.35),0 10px 30px rgba(0,0,0,.8);padding:14px}
+.panel h3{margin:0 0 10px;font-weight:normal;letter-spacing:.3em;color:var(--mustard);font-size:16px;text-align:center}
+#logBody{flex:1;overflow-y:auto;font-size:14px;line-height:1.8;letter-spacing:.04em;padding-right:4px;user-select:text;-webkit-user-select:text}
+#logBody .lg{margin:0 0 6px}
+#logBody .lg b{color:#e2b85a;font-weight:normal;margin-right:4px}
+#logBody .lg.me b{color:var(--teal-l)}
+#logBody .lg.n{color:#cdbb95}
+#logBody .sec{margin:14px 0 6px;padding:3px 8px;font-size:12px;letter-spacing:.2em;color:#2a1a10;background:var(--mustard);border-radius:2px;display:inline-block}
+.opt{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:6px 0 14px}
+.opt button{padding:7px 12px;border-radius:3px;border:1px solid #7a5a2a;background:#2a1a10;font-size:14px;letter-spacing:.1em}
+.opt button.on{background:var(--mustard);color:#2a1a10;border-color:#f0cf7a}
+.panel .row{font-size:13px;letter-spacing:.15em;color:#d8c69c;text-align:center;margin-top:4px}
+.panel .close{margin-top:10px;align-self:center}
+
+/* 小さな行為（ことばのかわりに） */
+.hint.acthint{color:#a9d2ca}
+.card.act{background:linear-gradient(180deg,#e6efe9,#cfdcd4);border-color:#7fa69e;box-shadow:0 3px 0 #4f6f6a,0 6px 14px rgba(0,0,0,.45);padding-left:44px}
+.card.act:before{background:var(--teal)}
+.card.act .ai{position:absolute;left:16px;top:50%;width:20px;height:20px;margin-top:-10px}
+.card.act .ai svg{width:20px;height:20px;fill:none;stroke:#2b4a48;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.card.memo{background:linear-gradient(180deg,#fdf6dc,#f3e3b0);border-color:#c79a3a;box-shadow:0 3px 0 #9a7428,0 0 0 1px rgba(212,165,58,.5),0 6px 14px rgba(0,0,0,.45)}
+.card.memo:before{background:var(--enji)}
+.card.memo .mt{display:block;font-size:11px;letter-spacing:.2em;color:#8c2f39;margin-bottom:2px}
+/* 間（返事を受け取る一拍） */
+#beatfx{position:absolute;inset:0;pointer-events:none;z-index:3;display:flex;align-items:center;justify-content:center}
+#beatfx .steam{position:absolute;bottom:18%;width:90px;height:60%;opacity:0}
+#beatfx .steam i{position:absolute;bottom:0;width:10px;height:70%;border-radius:50%;background:radial-gradient(ellipse at 50% 60%,rgba(255,250,235,.55),rgba(255,250,235,0) 70%);filter:blur(5px);opacity:0}
+#beatfx .steam i:nth-child(1){left:18px}#beatfx .steam i:nth-child(2){left:40px;animation-delay:.25s!important}#beatfx .steam i:nth-child(3){left:62px;animation-delay:.5s!important}
+#app.beat-steam #beatfx .steam{opacity:1}
+#app.beat-steam #beatfx .steam i{animation:steam 1.5s ease-out forwards}
+@keyframes steam{0%{opacity:0;transform:translateY(20px) scaleY(.6)}35%{opacity:1}100%{opacity:0;transform:translateY(-70px) scaleY(1.3) translateX(6px)}}
+#app.beat-lamp #portrait{animation:lampflick 1.1s ease-in-out}
+#app.beat-lamp #bg{animation:bgflick 1.1s ease-in-out}
+@keyframes lampflick{0%,100%{box-shadow:0 0 0 1px #000,0 0 26px 6px var(--lamp),0 8px 24px rgba(0,0,0,.7)}20%{box-shadow:0 0 0 1px #000,0 0 10px 2px var(--lamp),0 8px 24px rgba(0,0,0,.7)}45%{box-shadow:0 0 0 1px #000,0 0 34px 10px var(--lamp),0 8px 24px rgba(0,0,0,.7)}65%{box-shadow:0 0 0 1px #000,0 0 16px 3px var(--lamp),0 8px 24px rgba(0,0,0,.7)}}
+@keyframes bgflick{20%{opacity:.8}45%{opacity:1}65%{opacity:.88}}
+#app.beat-noise #grain{opacity:.22;transition:opacity .2s}
+#app.beat-noise #portrait img{filter:contrast(1.1) brightness(.9) saturate(.7)}
+#app.beat-silence #portrait{opacity:.86}
+#app.beat #pface{opacity:.45}
+#app.beat #text{color:#9c8c6c}
+#app.beat-nod #portrait{animation:nod .9s ease}
+@keyframes nod{40%{transform:translateY(5px)}}
+#app.beat-window #fx .dawn{opacity:.5;transition:opacity .4s}
+#app.beat-window #bg{filter:brightness(.55) saturate(.7) hue-rotate(-12deg) blur(1px)}
+/* レコードの曲名 */
+#songChip{position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:4;font-size:11.5px;letter-spacing:.12em;white-space:nowrap;padding:3px 12px 3px 26px;border-radius:12px;background:rgba(20,12,7,.82);border:1px solid rgba(212,165,58,.45);color:#f3e1b5;opacity:0;transition:opacity .8s;pointer-events:none;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+#songChip:before{content:"";position:absolute;left:7px;top:50%;width:13px;height:13px;margin-top:-6.5px;border-radius:50%;background:radial-gradient(circle,#8c2f39 0 2px,#111 2px 3px,#2a2a2a 3px 4px,#111 4px 7px);animation:spin 1.8s linear infinite}
+#songChip.on{opacity:1}
+/* 心のメモ */
+#text .memo{color:#f6d98a;border-bottom:1px dashed rgba(246,217,138,.8);padding:0 1px;border-radius:2px;cursor:pointer;animation:memoglow 1.8s ease-in-out infinite;position:relative}
+#text .memo.got{animation:none;color:#e9d7a8;border-bottom-style:solid;border-bottom-color:rgba(233,215,168,.45)}
+#text .memo.got:after{content:"✎";font-size:.7em;margin-left:2px;color:var(--mustard)}
+@keyframes memoglow{0%,100%{text-shadow:0 1px 2px #000,0 0 4px rgba(246,190,80,.35)}50%{text-shadow:0 1px 2px #000,0 0 12px rgba(246,190,80,.95),0 0 22px rgba(246,190,80,.45)}}
+#memoToast{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(6px);z-index:5;font-size:12.5px;letter-spacing:.1em;padding:6px 14px;border-radius:4px;background:#f4ead2;color:#3a2412;border:1px solid #c79a3a;box-shadow:0 4px 14px rgba(0,0,0,.6);opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+#memoToast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+/* 手帳 */
+#noteBody{flex:1;overflow-y:auto;padding:10px 14px;border-radius:4px;background:#f4ead2;color:#2b2f3f;font-size:14.5px;line-height:2;letter-spacing:.06em;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(2em - 1px),rgba(60,80,140,.22) calc(2em - 1px),rgba(60,80,140,.22) 2em);background-attachment:local;user-select:text;-webkit-user-select:text}
+#noteBody .nn{margin:6px 0 0;color:#8c2f39;font-size:12.5px;letter-spacing:.2em}
+#noteBody .ne{margin:0 0 4px;padding-left:1em;text-indent:-1em}
+#noteBody .ne b{font-weight:normal;color:#1d3f6e;border-bottom:1px solid rgba(29,63,110,.35)}
+#noteBody .empty{color:#7a6a50;text-align:center;margin-top:1.5em}
+.panel .notehint{font-size:11.5px;color:#cdbb95;text-align:center;letter-spacing:.1em;margin:6px 0 0}
+
+/* 横画面 */
+@media (orientation:landscape) and (max-height:560px){
+  #game{flex-direction:row;flex-wrap:wrap}
+  #hud{flex:0 0 100%;height:38px}
+  #stage{flex:0 0 40%;height:calc(100% - 38px);padding:4px}
+  #bottom{flex:1 1 0;height:calc(100% - 38px);display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px 8px 0}
+  #textbox{min-height:120px}
+  #text{font-size:15.5px;line-height:1.75}
+  #app.choosing #bottom{justify-content:flex-start;overflow-y:auto;padding-top:16px}
+  #app.choosing #choices{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .card{font-size:13.5px;padding:8px 10px 8px 20px;line-height:1.45}
+  .hint{grid-column:1/-1}
+  .logo{margin-top:6px}
+  .logo h1{font-size:36px;margin:4px 0 2px}
+  .tdesc{margin-top:6px;padding:4px 12px;font-size:12.5px;line-height:1.7}
+  .tmenu{max-width:600px;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px;margin-bottom:10px}
+  .tmenu .btn{min-width:200px;margin:4px;padding:10px 22px}
+  .tmenu .seen{flex:0 0 100%;margin-top:6px}
+  .seen ul,.seen ul.r3{grid-template-columns:repeat(3,auto);justify-content:center;gap:2px 18px}
+  #ending .seen{max-width:600px}
+  #ending h2{margin:6px 0;font-size:32px}
+  #ending .quote{margin:4px auto 14px;max-width:560px;font-size:15px;line-height:1.8}
+  #ending .route{margin:-6px 0 8px}
+  #ending .seen{margin-top:6px;padding:6px 10px}
+  #ending .eb .btn{margin:6px auto 4px}
+  #summary{flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:0 10px}
+  #summary h2,#summary .sub{flex:0 0 100%;text-align:center}
+  .srow{max-width:360px}
+  .jingle{margin-top:10px}.jingle .nt{font-size:30px;margin:4px 0}
+  .jingle .rec{display:none}
+}
+@media (prefers-reduced-motion:reduce){#grain,#scratch,#fx .rain,#fx .snow{animation:none}}
+</style>
+</head>
+<body>
+<div id="app" class="titlemode">
+  <div id="bg"></div>
+  <div id="fx"><div class="rain"></div><div class="rain2"></div><div class="snow"></div><div class="snow2"></div><div class="dark"></div><div class="candle"></div><div class="dawn"></div></div>
+  <div id="vignette"></div>
+
+  <main id="game" hidden>
+    <header id="hud">
+      <a class="back" href="../">← ゲーム一覧</a>
+      <div class="nightinfo"><span id="hudNight">第一夜</span><span id="hudClock">23:40</span></div>
+      <div class="hudbtns">
+        <button class="ibtn" id="btnLog" aria-label="会話のログ"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5"/></svg></button>
+        <button class="ibtn btnMute" aria-label="音のオンオフ"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
+        <button class="ibtn" id="btnMenu" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 4.5v3"/></svg></button>
+      </div>
+    </header>
+    <section id="stage">
+      <div id="pwrap" class="none">
+        <div id="portrait" class="f-neutral"><img id="pimg" alt=""><div class="tint"></div><div class="cheek"></div><div class="shade"></div><div class="phonebadge">電話の向こう</div></div>
+        <div id="meter" class="off" aria-hidden="true">
+          <svg viewBox="0 0 80 48">
+            <defs><linearGradient id="mg" x1="0" x2="1"><stop offset="0" stop-color="#b84a55"/><stop offset=".5" stop-color="#e2b14a"/><stop offset="1" stop-color="#5f9a93"/></linearGradient></defs>
+            <path d="M6 42a34 34 0 0 1 68 0z" fill="#2a1a10" stroke="#a97f22" stroke-width="1.5"/>
+            <path d="M12 42a28 28 0 0 1 56 0" fill="none" stroke="url(#mg)" stroke-width="5"/>
+            <path d="M40 14v4M20.2 22.2l2.8 2.8M59.8 22.2l-2.8 2.8M12 42h4M64 42h4" stroke="#f1e4c8" stroke-width="1"/>
+            <text x="9" y="38" font-size="7.5" fill="#f1c9c9" font-family="serif">近</text>
+            <text x="64" y="38" font-size="7.5" fill="#c9ece6" font-family="serif">遠</text>
+            <g id="needle"><path d="M40 42L40 17" stroke="#f8e7bd" stroke-width="1.6" stroke-linecap="round"/></g>
+            <circle cx="40" cy="42" r="3" fill="#a97f22" stroke="#2a1a10"/>
+          </svg>
+        </div>
+      </div>
+      <div id="pname"><span id="pnameMain"></span><span id="plabel"></span></div>
+      <div id="pface" class="off"><span id="faceIcon"></span><span id="faceSay"></span></div>
+      <div id="beatfx" aria-hidden="true"><div class="steam"><i></i><i></i><i></i></div></div>
+      <div id="songChip" aria-live="polite"></div>
+    </section>
+    <section id="bottom">
+      <div id="memoToast" aria-live="polite"></div>
+      <div id="textbox"><div id="speaker" class="none"></div><div id="text"></div><div id="nextMark">▼</div></div>
+      <div id="choices"></div>
+    </section>
+  </main>
+
+  <section id="title" class="screen">
+    <a class="back" href="../">← ゲーム一覧</a>
+    <div class="tbtns"><button class="ibtn btnMute" aria-label="音のオンオフ"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button><button class="ibtn" id="btnTitleMenu" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 4.5v3"/></svg></button></div>
+    <div class="logo">
+      <div class="small">純喫茶ともしび・夜の部</div>
+      <h1>深夜の相談室</h1>
+      <div class="en"><span class="lamp"></span>MIDNIGHT COUNSEL ROOM<span class="lamp"></span></div>
+    </div>
+    <p class="tdesc">眠れない人の話を聞いて、近すぎず遠すぎない返事を選ぶ、五夜の物語。</p>
+    <div class="tmenu">
+      <button class="btn" id="btnNew">相談室をひらく</button>
+      <button class="btn sub" id="btnCont" disabled>つづきから</button>
+      <div class="seen" id="seenTitle"></div>
+    </div>
+  </section>
+
+  <section id="nightcard" class="screen" hidden>
+    <div class="radio">
+      <div class="dial"><div class="scale"><span>76</span><span>78</span><span>80</span><span>82</span><span>84</span><span>86</span><span>88</span><span>90</span></div><div class="ticks"></div><div class="lbl">FM　MHz</div><div class="ndl"></div></div>
+      <div class="knobs"><div class="knob"></div><div class="grille"></div><div class="knob"></div></div>
+    </div>
+    <div class="jingle"><div class="station" id="ncStation"></div><div class="nt" id="ncTitle"></div><div class="ns" id="ncSub"></div><div class="rec"></div></div>
+  </section>
+
+  <section id="summary" class="screen" hidden></section>
+
+  <section id="letter" class="screen" hidden>
+    <div class="lhead"><div class="who" id="lWho"></div><button class="btn small" id="lToggle">横書きで読む</button></div>
+    <div class="paper vert" id="lPaper"><div class="ltext" id="lText"></div></div>
+    <div class="lfoot"><span class="note" id="lNote">← 左へめくって読む</span><button class="btn small" id="lNext">手紙をたたむ</button></div>
+  </section>
+
+  <section id="ending" class="screen" hidden></section>
+
+  <div id="logPanel" class="panel" hidden><div class="box"><h3>これまでの会話</h3><div id="logBody"></div><button class="btn small close" data-close>とじる</button></div></div>
+  <div id="menuPanel" class="panel" hidden><div class="box">
+    <h3>設定</h3>
+    <div class="row">文字の速さ</div>
+    <div class="opt" id="speedOpt"><button data-sp="slow">遅い</button><button data-sp="normal">普通</button><button data-sp="fast">速い</button><button data-sp="instant">瞬間</button></div>
+    <div class="row">音</div>
+    <div class="opt"><button id="muteOpt">音あり</button></div>
+    <div class="row" id="noteRow">相談員の手帳</div>
+    <div class="opt" id="noteOptRow"><button id="btnNote">手帳を読み返す</button></div>
+    <div class="opt" id="toTitleRow"><button id="btnToTitle">タイトルへ戻る（その夜のはじめから再開できます）</button></div>
+    <button class="btn small close" data-close>とじる</button>
+  </div></div>
+  <div id="notePanel" class="panel" hidden><div class="box">
+    <h3>相談員の手帳</h3>
+    <div id="noteBody"></div>
+    <p class="notehint">話の中で光ったことばにふれると、ここに書き留められます。</p>
+    <button class="btn small close" data-close>とじる</button>
+  </div></div>
+  <div id="confirmPanel" class="panel" hidden><div class="box">
+    <h3>最初からひらく</h3>
+    <div class="row" style="line-height:1.9">前の夜までの記録は上書きされます。<br>第一夜からはじめますか？</div>
+    <div class="opt"><button id="cfYes">はじめる</button><button data-close>やめる</button></div>
+  </div></div>
+
+  <div id="grain"></div>
+  <div id="scratch"></div>
+</div>
+
+<script src="story/frame1.js"></script>
+<script src="story/ol.js"></script>
+<script src="story/student.js"></script>
+<script src="story/frame2.js"></script>
+<script src="story/konbini.js"></script>
+<script src="story/salaryman.js"></script>
+<script src="story/frame3.js"></script>
+<script src="story/musician.js"></script>
+<script src="story/grandpa.js"></script>
+<script src="story/frame4.js"></script>
+<script src="story/mother.js"></script>
+<script src="story/child.js"></script>
+<script src="story/frame5.js"></script>
+<script src="story/freelance.js"></script>
+<script src="story/madam.js"></script>
+<script src="story/epilogue.js"></script>
+<script src="story/epilogue2.js"></script>
+<script src="story/epilogue3.js"></script>
+<script>
+(function () {
+'use strict';
+const STORY = window.STORY = window.STORY || { visitors: {}, nights: {}, epilogue: {} };
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+const app = $('#app');
+
+// ───────── 設定・URL ─────────
+const Q = new URLSearchParams(location.search);
+const BOT = Q.get('bot') === '1';
+const FAST = BOT && Q.get('fast') === '1';
+const SAVE_KEY = 'shinyaSoudanSave', END_KEY = 'shinyaSoudanEndings', SET_KEY = 'shinyaSoudanSettings', MUTE_KEY = 'shinyaSoudanMute';
+const SPEEDS = { slow: 62, normal: 34, fast: 14, instant: 0 };
+const IDS = ['ol', 'student', 'konbini', 'salaryman', 'musician', 'grandpa', 'mother', 'child', 'freelance', 'madam'];
+const TIES = { T1: ['ol', 'salaryman'], T2: ['ol', 'konbini'], T3: ['student', 'musician'], T5: ['mother', 'child'], T8: ['student', 'konbini', 'freelance'] };
+const TIE_NAMES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8'];
+const DEEP_TIES = ['T7', 'T4', 'T6', 'T3', 'T1', 'N1']; // エピローグで深く描く糸（全体）
+// ルート別の候補（優先順）。DJルートは N1 を必ず描き、残り1本
+const DEEP_BY_ROUTE = { nanami: ['T1', 'T4', 'T7', 'T3'], haruka: ['T6', 'T4', 'T7', 'T3'], natsume: ['T3', 'T7'], alone: ['T7', 'T3', 'T1', 'T4', 'T6'] };
+const DJ_ROUTE_NEED = 9; // 第二夜のナツメの場面を終えた時点の dj
+const DJ_HIGH = 18, CAT_HIGH = 3, CONN_NEED = 4;
+const ROUTES = { nanami: 'ふたつめの杏仁豆腐', haruka: 'お月さまの客席', alone: 'ひとりぶんの灯り' };
+const ROUTE_KEY = 'shinyaSoudanRoutes', THREAD_KEY = 'shinyaSoudanThreads', PLAYED_KEY = 'shinyaSoudanPlayed';
+const NIGHT_KANJI = ['', '第一夜', '第二夜', '第三夜', '第四夜', '第五夜'];
+const ENDINGS = { A: '夜明けの珈琲', B: '灯りの消えない窓', C: 'ふたりだけの周波数', D: '砂嵐のあとで', E: '真夜中の灯り番' };
+
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 保存できない環境 */ } }
+
+const settings = Object.assign({ speed: 'normal' }, lsGet(SET_KEY, {}));
+if (!SPEEDS.hasOwnProperty(settings.speed)) settings.speed = 'normal';
+
+// ───────── 状態 ─────────
+const G = {
+  token: 0, state: 'title', night: 0, flags: new Set(), res: {}, meters: {}, counts: {}, dj: 0, cat: 0, djAt2: null,
+  djName: 'ナツメ', catName: '黒猫', revealed: new Set(), names: {},
+  seg: null,     // {type:'visitor'|'dj'|'cat'|'frame', id}
+  pkey: 'none',  // 今の胸像
+  log: [], ending: null,
+  memos: [],     // 心のメモ（相談員の手帳）：{id, who, name, word, note, night}
+  lastBeat: '',
+};
+const ABORT = { abort: true };
+
+function updateTest() {
+  const seg = G.seg;
+  window.__game = {
+    state: G.state, night: G.night,
+    visitor: seg ? (seg.type === 'visitor' ? seg.id : seg.type) : null,
+    meter: seg && seg.type === 'visitor' ? (G.meters[seg.id] || 0) : null,
+    results: IDS.filter(id => G.res[id]).map(id => ({ id, name: (STORY.visitors[id] || {}).name || id, night: (STORY.visitors[id] || {}).night, result: G.res[id] })),
+    ending: G.ending, route: G.res.konbini ? route() : null, djroute: djRoute(), dj: G.dj, cat: G.cat, ties: tieList(), flags: Array.from(G.flags),
+    work: G.res.konbini ? ['other', 'design', 'illust'][drawLevel()] : null, wakai: wakai(), deep: G.deep || [],
+    memos: G.memos.map(m => m.id),
+  };
+}
+function setState(s) { G.state = s; updateTest(); }
+
+// ───────── 条件式 ─────────
+function rank(id) { return { good: 2, mid: 1, bad: 0 }[G.res[id]]; }
+function okId(id) { return G.res[id] === 'good' || G.res[id] === 'mid'; }
+function tieOn(name) {
+  if (name === 'T4') return G.flags.has('kiri_job') && okId('salaryman') && okId('konbini');
+  if (name === 'T6') return wakai();
+  if (name === 'N1') return djRoute();
+  if (name === 'T7') {
+    const other = okId('madam') || G.cat >= CAT_HIGH;
+    return okId('grandpa') && other && (G.res.grandpa === 'good' || G.res.madam === 'good' || G.cat >= CAT_HIGH + 1);
+  }
+  const ids = TIES[name]; if (!ids) return false;
+  return ids.every(okId) && ids.some(id => G.res[id] === 'good');
+}
+function tieList() { return TIE_NAMES.filter(tieOn); }
+// 彼の人生の道（第二夜の湊の会話のあとで確定）
+function route() {
+  const f = (k) => G.flags.has(k);
+  if (f('mi_tell') && !f('mi_rush') && okId('ol')) return 'nanami';
+  if (f('konbini_words')) return 'haruka';
+  if (djAt2High()) return 'alone'; // DJ（ナツメ）ルート：三好の人生は「ひとり」
+  if (okId('konbini')) return 'haruka';
+  return 'alone';
+}
+// DJ（ナツメ）ルート（第二夜のナツメの場面のあとで確定）
+function djAt2High() { return typeof G.djAt2 === 'number' && G.djAt2 >= DJ_ROUTE_NEED; }
+function djRoute() { return !!G.res.konbini && djAt2High() && route() === 'alone'; }
+function routeKey() { return djRoute() ? 'natsume' : route(); }
+// 仕事（コースターと桐島／遥ルートのPOP）
+function popJob() { return !!G.res.konbini && route() === 'haruka' && !G.flags.has('kiri_job'); }
+function designer() { return G.flags.has('kiri_job') || popJob(); }
+function drawLevel() { if (!designer()) return 0; return G.flags.has('hi_draw') && G.flags.has('mi_draw') ? 2 : 1; }
+// 遥と澄江の和解（三好のルートとは独立）
+function wakai() {
+  if (!okId('mother') || !okId('madam')) return false;
+  return ['mother_letter', 'n4_bridge', 'sumie_coaster'].filter(f => G.flags.has(f)).length >= 2;
+}
+function connHigh() { return tieList().length >= CONN_NEED; }
+function djHigh() { return G.dj >= DJ_HIGH; }
+function evalTok(tok) {
+  tok = tok.trim(); let neg = false;
+  if (tok[0] === '!') { neg = true; tok = tok.slice(1).trim(); }
+  let v, m;
+  if ((m = tok.match(/^(good|mid|bad|ok):(\w+)$/))) v = m[1] === 'ok' ? okId(m[2]) : G.res[m[2]] === m[1];
+  else if ((m = tok.match(/^tie:(T\d)$/))) v = tieOn(m[1]);
+  else if ((m = tok.match(/^(dj|cat)\s*(>=|<=|>|<|==)\s*(-?\d+)$/))) {
+    const a = G[m[1]], b = +m[3];
+    v = m[2] === '>=' ? a >= b : m[2] === '<=' ? a <= b : m[2] === '>' ? a > b : m[2] === '<' ? a < b : a === b;
+  }
+  else if (tok === 'conn') v = connHigh();
+  else if (tok === 'djhigh') v = djHigh();
+  else if (tok === 'cathigh') v = G.cat >= CAT_HIGH;
+  else if ((m = tok.match(/^route:(\w+)$/))) v = route() === m[1];
+  else if ((m = tok.match(/^draw([012])$/))) v = drawLevel() === +m[1];
+  else if (tok === 'sayno') v = G.flags.has('hi_no') || G.flags.has('mi_no');
+  else if (tok === 'designer') v = designer();
+  else if (tok === 'pop_job') v = popJob();
+  else if (tok === 'wakai') v = wakai();
+  else if (tok === 'djroute') v = djRoute();
+  else v = G.flags.has(tok);
+  return neg ? !v : v;
+}
+function cond(c) {
+  if (typeof c === 'function') { try { return !!c(G); } catch (e) { return false; } }
+  return String(c).split('|').some(or => or.split('&').every(evalTok));
+}
+
+// ───────── 音（WebAudio） ─────────
+const AU = { ctx: null, master: null, muted: !!lsGet(MUTE_KEY, false), noiseBuf: null, rainNode: null, lastBlip: 0 };
+function initAudio() {
+  if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume().catch(() => {}); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  try {
+    AU.ctx = new AC();
+    AU.master = AU.ctx.createGain(); AU.master.gain.value = AU.muted ? 0 : 0.55; AU.master.connect(AU.ctx.destination);
+    const len = AU.ctx.sampleRate * 2, buf = AU.ctx.createBuffer(1, len, AU.ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    AU.noiseBuf = buf;
+    if (G.weather === 'rain') rainAmb(true);
+  } catch (e) { AU.ctx = null; }
+}
+function canPlay() { return AU.ctx && !AU.muted && AU.ctx.state === 'running'; }
+function tone(f, dur, o = {}) {
+  if (!canPlay()) return; const c = AU.ctx, t = c.currentTime + (o.at || 0);
+  const os = c.createOscillator(), g = c.createGain();
+  os.type = o.type || 'sine'; os.frequency.setValueAtTime(f, t);
+  if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + dur);
+  const v = o.vol || 0.08;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + (o.att || 0.008)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  os.connect(g); g.connect(AU.master); os.start(t); os.stop(t + dur + 0.05);
+}
+function noise(dur, o = {}) {
+  if (!canPlay()) return; const c = AU.ctx, t = c.currentTime + (o.at || 0);
+  const s = c.createBufferSource(); s.buffer = AU.noiseBuf; s.loop = true;
+  const fl = c.createBiquadFilter(); fl.type = o.ft || 'bandpass'; fl.frequency.setValueAtTime(o.f || 1000, t); fl.Q.value = o.q || 1;
+  if (o.fTo) fl.frequency.exponentialRampToValueAtTime(o.fTo, t + dur);
+  const g = c.createGain(), v = o.vol || 0.05;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + (o.att || 0.01)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(fl); fl.connect(g); g.connect(AU.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+}
+const SFX = {
+  blip() { const n = performance.now(); if (n - AU.lastBlip < 55) return; AU.lastBlip = n; tone(520 + Math.random() * 160, 0.035, { type: 'triangle', vol: 0.018 }); },
+  card() { noise(0.05, { f: 2200, q: 2, vol: 0.05 }); tone(230, 0.08, { type: 'sine', vol: 0.05 }); },
+  pick() { tone(660, 0.25, { type: 'triangle', vol: 0.045 }); tone(990, 0.35, { type: 'sine', vol: 0.03, at: 0.07 }); },
+  page() { noise(0.32, { ft: 'highpass', f: 900, fTo: 3500, vol: 0.05, att: 0.05 }); },
+  letter() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.9, { vol: 0.035, at: i * 0.13 })); },
+  door() { [1568, 2093, 1760].forEach((f, i) => tone(f, 1.1, { vol: 0.04, at: i * 0.11, att: 0.003 })); },
+  phone() {
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 18; i++) {
+      const at = r * 1.5 + i * 0.05;
+      tone(i % 2 ? 1320 : 1180, 0.06, { type: 'square', vol: 0.018, at, att: 0.002 });
+    }
+  },
+  pour() { noise(1.6, { ft: 'bandpass', f: 600, fTo: 1400, q: 0.8, vol: 0.05, att: 0.2 }); },
+  tune() { noise(1.8, { ft: 'bandpass', f: 400, fTo: 3000, q: 0.6, vol: 0.05, att: 0.1 }); tone(1800, 1.2, { to: 700, type: 'sine', vol: 0.012, at: 0.2 }); },
+  jingle() { [523, 659, 784, 1047, 880].forEach((f, i) => tone(f, i === 4 ? 1.2 : 0.3, { type: 'triangle', vol: 0.04, at: 0.1 + i * 0.17 })); },
+  rain() { noise(2.5, { ft: 'lowpass', f: 1800, vol: 0.05, att: 0.6 }); },
+  thunder() { noise(2.8, { ft: 'lowpass', f: 160, fTo: 60, vol: 0.12, att: 0.05 }); },
+  clock() { for (let i = 0; i < 4; i++) tone(i % 2 ? 1900 : 2300, 0.03, { type: 'square', vol: 0.012, at: i * 0.5, att: 0.001 }); },
+  meter() { tone(330, 0.12, { type: 'sine', vol: 0.03 }); },
+  // レコード：針を落とす音と、ゆっくりした三拍子のはじまり
+  record() {
+    noise(0.12, { ft: 'lowpass', f: 300, vol: 0.06 });
+    for (let i = 0; i < 10; i++) noise(0.02, { ft: 'highpass', f: 2500, vol: 0.02, at: 0.15 + i * 0.27 + Math.random() * 0.1 });
+    [392, 494, 587, 523, 440, 494, 392].forEach((f, i) => tone(f, 0.9, { type: 'triangle', vol: 0.025, at: 0.6 + i * 0.5, att: 0.05 }));
+  },
+  wind() { noise(2.2, { ft: 'bandpass', f: 380, fTo: 900, q: 0.5, vol: 0.06, att: 0.4 }); },
+  pencil() { for (let i = 0; i < 5; i++) noise(0.05, { ft: 'highpass', f: 3200, vol: 0.03, at: i * 0.07 }); },
+  static() { noise(0.7, { ft: 'bandpass', f: 1800, q: 0.4, vol: 0.035, att: 0.05 }); },
+  hush() { tone(196, 0.9, { type: 'sine', vol: 0.012, att: 0.3 }); },
+};
+function sfx(n) { try { SFX[n] && SFX[n](); } catch (e) { /* 無音で続行 */ } }
+function rainAmb(on) {
+  if (!AU.ctx) return;
+  if (on && !AU.rainNode) {
+    try {
+      const c = AU.ctx, s = c.createBufferSource(); s.buffer = AU.noiseBuf; s.loop = true;
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1300;
+      const g = c.createGain(); g.gain.value = 0.0001; g.gain.exponentialRampToValueAtTime(0.035, c.currentTime + 2);
+      s.connect(f); f.connect(g); g.connect(AU.master); s.start(); AU.rainNode = { s, g };
+    } catch (e) { AU.rainNode = null; }
+  } else if (!on && AU.rainNode) {
+    const r = AU.rainNode; AU.rainNode = null;
+    try { r.g.gain.exponentialRampToValueAtTime(0.0001, AU.ctx.currentTime + 1); r.s.stop(AU.ctx.currentTime + 1.1); } catch (e) { /* noop */ }
+  }
+}
+function setMute(m) {
+  AU.muted = m; lsSet(MUTE_KEY, m);
+  if (AU.master) AU.master.gain.value = m ? 0 : 0.55;
+  $$('.btnMute').forEach(b => b.classList.toggle('muted', m));
+  $('#muteOpt').textContent = m ? '音なし' : '音あり';
+  $('#muteOpt').classList.toggle('on', !m);
+}
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, initAudio, { passive: true }));
+
+// ───────── 表情アイコン ─────────
+function faceSVG(f) {
+  const E = {
+    dot: '<circle cx="8.3" cy="10" r="1.35" fill="#2a1a10"/><circle cx="15.7" cy="10" r="1.35" fill="#2a1a10"/>',
+    arc: '<path d="M6.3 10.6q2-2.6 4 0M13.7 10.6q2-2.6 4 0"/>',
+    closed: '<path d="M6.3 10q2 1.9 4 0M13.7 10q2 1.9 4 0"/>',
+    line: '<path d="M6.5 10.4h3.6M13.9 10.4h3.6"/>',
+    big: '<circle cx="8.3" cy="9.8" r="1.9" fill="#fff8e0"/><circle cx="15.7" cy="9.8" r="1.9" fill="#fff8e0"/><circle cx="8.3" cy="9.8" r=".9" fill="#2a1a10"/><circle cx="15.7" cy="9.8" r=".9" fill="#2a1a10"/>',
+  };
+  const B = { sad: '<path d="M5.8 7.9l3.6-1.3M18.2 7.9l-3.6-1.3"/>', angry: '<path d="M5.8 6.6l3.8 1.4M18.2 6.6l-3.8 1.4"/>', tense: '<path d="M6 7.2h3.6M14.4 7.2h3.6"/>' };
+  const M = {
+    neutral: '<path d="M9.3 16h5.4"/>', smile: '<path d="M8.2 15q3.8 3.4 7.6 0"/>', laugh: '<path d="M7.6 14.4q4.4 5.2 8.8 0z" fill="#8c2f39"/>',
+    sad: '<path d="M8.6 17.2q3.4-2.8 6.8 0"/>', tense: '<path d="M8 16.2l1.6-1 1.6 1 1.6-1 1.6 1 1.6-1"/>', surprise: '<circle cx="12" cy="16.2" r="1.7" fill="#8c2f39"/>',
+    angry: '<path d="M8.6 16.8q3.4-1.6 6.8 0"/>', shy: '<path d="M10 15.6q2 1.4 4 0"/>', sleepy: '<path d="M10.2 16.2q1.8.9 3.6 0"/>',
+  };
+  const cheek = '<ellipse cx="6.3" cy="13.6" rx="1.9" ry="1.1" fill="#e46f6f" opacity=".75" stroke="none"/><ellipse cx="17.7" cy="13.6" rx="1.9" ry="1.1" fill="#e46f6f" opacity=".75" stroke="none"/>';
+  const tear = '<path d="M17.4 11.6q1.4 2.3 0 3.3q-1.4-1 0-3.3z" fill="#7fb6e6" stroke="none"/>';
+  const map = {
+    neutral: [E.dot, M.neutral], tense: [E.dot + B.tense, M.tense], sad: [E.dot + B.sad, M.sad], tear: [E.closed + B.sad, M.sad, tear],
+    smile: [E.arc, M.smile], warm: [E.arc, M.smile, cheek], laugh: [E.arc, M.laugh, cheek], blush: [E.dot, M.shy, cheek],
+    surprise: [E.big, M.surprise], angry: [E.dot + B.angry, M.angry], closed: [E.closed, M.shy], sleepy: [E.line, M.sleepy], shy: [E.closed, M.shy, cheek],
+  };
+  const p = map[f] || map.neutral;
+  return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.4" fill="#e7b85a" stroke="#5a3a18" stroke-width="1.2"/><g fill="none" stroke="#2a1a10" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' + p.join('') + '</g></svg>';
+}
+
+// ───────── 画面部品 ─────────
+const portrait = $('#portrait'), pimg = $('#pimg'), pwrap = $('#pwrap'), meterEl = $('#meter'), needle = $('#needle');
+const textEl = $('#text'), speakerEl = $('#speaker'), textbox = $('#textbox'), choicesEl = $('#choices');
+const IMG = (k) => k === 'dj' ? '../assets/v_regular.jpg' : k === 'cat' ? '../assets/v_cat.jpg' : (STORY.visitors[k] ? STORY.visitors[k].img : '../assets/v_' + k + '.jpg');
+
+function displayName(who) {
+  if (who === 'me') return '相談員';
+  if (who === 'dj') return G.djName;
+  if (who === 'cat') return G.catName;
+  if (who === 'radio') return 'ラジオ';
+  const v = STORY.visitors[who];
+  if (v) { if (G.names[who]) return G.names[who]; return (G.revealed.has(who) || !v.anon) ? (v.short || v.name) : v.anon; }
+  return who;
+}
+function vName(v) { return (v.routeName && G.res.konbini && v.routeName[route()]) || v.name; }
+function fullName(k) {
+  if (k === 'dj') return [G.djName, 'FMあさなぎ・深夜番組DJ'];
+  if (k === 'cat') return [G.catName, G.catName === '黒猫' ? 'マフラーの客' : '千鶴さんの猫'];
+  const v = STORY.visitors[k]; if (!v) return ['', ''];
+  if (G.names[k]) return [G.names[k], v.label || ''];
+  return (G.revealed.has(k) || !v.anon) ? [vName(v), v.label || ''] : [v.anon, v.label || ''];
+}
+function refreshName() {
+  const [n, l] = G.pkey === 'none' ? ['', ''] : fullName(G.pkey);
+  $('#pnameMain').textContent = n; $('#plabel').textContent = l;
+}
+function setPortrait(k, face) {
+  G.pkey = k;
+  const none = k === 'none';
+  pwrap.classList.toggle('none', none);
+  app.classList.toggle('room', none);
+  if (!none) {
+    const src = IMG(k);
+    if (pimg.getAttribute('src') !== src) pimg.setAttribute('src', src);
+    const v = STORY.visitors[k];
+    portrait.classList.toggle('phone', !!(v && v.phone));
+  } else portrait.classList.remove('phone');
+  refreshName();
+  setFace(face && face.f || 'neutral', face && face.say || '', true);
+  showMeter(!none && G.seg && G.seg.type === 'visitor' && G.seg.id === k);
+  layout();
+}
+function setFace(f, say, quiet) {
+  if (f) portrait.className = portrait.className.replace(/\bf-\w+/g, '').trim() + ' f-' + f;
+  const pf = $('#pface');
+  if (f) $('#faceIcon').innerHTML = faceSVG(f);
+  if (say !== undefined) $('#faceSay').textContent = say;
+  pf.classList.toggle('off', G.pkey === 'none' || (!$('#faceSay').textContent && G.pkey === 'none'));
+  if (!quiet) { pf.classList.remove('pop'); void pf.offsetWidth; pf.classList.add('pop'); }
+}
+function showMeter(on) { meterEl.classList.toggle('off', !on); if (on) drawMeter(false); }
+function drawMeter(bump) {
+  const m = G.seg && G.seg.type === 'visitor' ? (G.meters[G.seg.id] || 0) : 0;
+  const c = Math.max(-6, Math.min(6, m));
+  needle.style.transform = 'rotate(' + (c * 13) + 'deg)';
+  const lamp = c <= -3 ? 'rgba(190,60,70,.65)' : c >= 3 ? 'rgba(90,160,160,.6)' : Math.abs(c) <= 1 ? 'rgba(232,180,80,.65)' : (c < 0 ? 'rgba(214,120,70,.6)' : 'rgba(160,170,120,.55)');
+  document.documentElement.style.setProperty('--lamp', lamp);
+  if (bump) { meterEl.classList.remove('bump'); void meterEl.offsetWidth; meterEl.classList.add('bump'); sfx('meter'); }
+}
+function setClock(t) { if (t) $('#hudClock').textContent = t; }
+function setWeather(w) {
+  G.weather = w || 'none';
+  app.classList.toggle('w-rain', G.weather === 'rain');
+  app.classList.toggle('w-snow', G.weather === 'snow');
+  app.classList.toggle('fx-dark', G.weather === 'dark');
+  rainAmb(G.weather === 'rain');
+}
+function setFx(f) {
+  if (f === 'none') { app.classList.remove('fx-dark', 'fx-candle', 'fx-dawn'); setWeather(G.baseWeather); return; }
+  if (f === 'dark') { app.classList.add('fx-dark'); app.classList.remove('fx-candle'); }
+  else if (f === 'candle') app.classList.add('fx-dark', 'fx-candle');
+  else if (f === 'dawn') app.classList.add('fx-dawn');
+  else if (f === 'rain' || f === 'snow') setWeather(f);
+}
+
+// レイアウト：縦は胸像の大きさを残りの高さから決める
+function layout() {
+  const land = innerWidth > innerHeight && innerHeight < 560;
+  const hud = $('#hud').offsetHeight || 42;
+  let avail;
+  if (land) avail = Math.min(innerHeight - hud - 74, innerWidth * 0.36);
+  else avail = Math.min(innerHeight - hud - $('#bottom').offsetHeight - 82, innerWidth * 0.62);
+  const ps = Math.max(70, Math.min(G.pkey === 'none' ? 0 : 250, avail));
+  document.documentElement.style.setProperty('--ps', ps + 'px');
+}
+window.addEventListener('resize', layout);
+
+// ───────── 待ち・中断 ─────────
+let pend = null; // {resolve, reject}
+function guard(t) { if (t !== G.token) throw ABORT; }
+function wait(ms) {
+  const t = G.token;
+  return new Promise((res, rej) => setTimeout(() => (t === G.token ? res() : rej(ABORT)), ms));
+}
+let fastCount = 0;
+function yieldFast() { return (++fastCount % 25) ? Promise.resolve() : wait(0); }
+function abortAll() { G.token++; if (pend) { const p = pend; pend = null; p.reject(ABORT); } }
+
+// ───────── ログ ─────────
+function logSec(title) { G.log.push({ title, lines: [] }); }
+function logLine(who, text) { if (!G.log.length) logSec(''); G.log[G.log.length - 1].lines.push({ who, name: who ? displayName(who) : '', text }); }
+function openLog() {
+  const b = $('#logBody'); b.innerHTML = '';
+  const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  G.log.forEach(sec => {
+    if (sec.title) b.insertAdjacentHTML('beforeend', '<div class="sec">' + esc(sec.title) + '</div>');
+    sec.lines.forEach(l => b.insertAdjacentHTML('beforeend', l.who ? '<p class="lg' + (l.who === 'me' ? ' me' : '') + '"><b>' + esc(l.name) + '</b>' + esc(l.text) + '</p>' : '<p class="lg n">' + esc(l.text) + '</p>'));
+  });
+  if (!G.log.length) b.innerHTML = '<p class="lg n">まだ、なにも話していない。</p>';
+  $('#logPanel').hidden = false; b.scrollTop = b.scrollHeight;
+}
+
+// ───────── 文字送り ─────────
+let typing = null;
+// 心のメモ：本文中の《ことば》が光り、タップすると手帳に書き留められる
+const escH = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function hasMemo(id) { return G.memos.some(m => m.id === id); }
+function memoHTML(raw, meta) {
+  return escH(raw).replace(/《([^》]*)》/, (all, w) => meta && meta.memo
+    ? '<span class="memo' + (hasMemo(meta.memo) ? ' got' : '') + '" data-memo="1">' + w + '</span>' : w).replace(/[《》]/g, '');
+}
+let toastTm = null;
+function toast(msg, ms) {
+  const el = $('#memoToast'); el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTm); toastTm = setTimeout(() => el.classList.remove('on'), ms || 2200);
+}
+function collectMemo(meta, word, who) {
+  if (!meta || !meta.memo || hasMemo(meta.memo)) return false;
+  const v = STORY.visitors[who];
+  const name = who === 'dj' ? G.djName : who === 'cat' ? G.catName : v ? ((G.revealed.has(who) || !v.anon) ? vName(v) : v.anon) : (G.seg && STORY.visitors[G.seg.id] ? displayName(G.seg.id) : '');
+  G.memos.push({ id: meta.memo, who: who || (G.seg && G.seg.id) || '', name, word, note: meta.note || word, night: G.night });
+  sfx('pencil');
+  toast('手帳に書き留めた ―「' + word + '」');
+  const sp = textEl.querySelector('.memo'); if (sp) sp.classList.add('got');
+  updateTest();
+  return true;
+}
+let memoHintShown = false;
+function showLine(who, text, meta) {
+  const t = G.token;
+  setState(G.state === 'choice' ? 'talk' : G.state);
+  textbox.classList.remove('done');
+  const narr = !who;
+  speakerEl.className = narr ? 'none' : (who === 'me' || who === 'radio' || who === 'dj' || who === 'cat' ? who : '');
+  speakerEl.textContent = narr ? '' : displayName(who);
+  textEl.className = narr ? 'narr' : (who === 'radio' ? 'radio' : '');
+  const raw = String(text), plain = raw.replace(/[《》]/g, '');
+  const mword = (raw.match(/《([^》]*)》/) || [])[1];
+  const memoLine = !!(meta && meta.memo && mword);
+  logLine(who, plain);
+  const chars = Array.from(plain);
+  const ms = FAST ? 0 : BOT ? 9 : SPEEDS[settings.speed];
+  const owner = memoLine ? (meta.who || (who && who !== 'me' && who !== 'radio' ? who : (G.seg && G.seg.id) || '')) : '';
+  const render = () => {
+    if (!memoLine) { textEl.textContent = plain; return; }
+    textEl.innerHTML = memoHTML(raw, meta);
+    const sp = textEl.querySelector('.memo');
+    if (sp) sp.addEventListener('click', (e) => { e.stopPropagation(); collectMemo(meta, mword, owner); });
+    if (!memoHintShown && !G.memos.length && !BOT) { memoHintShown = true; toast('光ったことばにふれると、手帳に書き留められます', 3400); }
+  };
+  const botMemo = () => { if (BOT && memoLine && Math.random() < 0.75) collectMemo(meta, mword, owner); };
+  return new Promise((resolve, reject) => {
+    pend = { resolve, reject };
+    const finish = () => { if (typing) { clearTimeout(typing); typing = null; } render(); textbox.classList.add('done'); };
+    if (!ms) { finish(); botMemo(); }
+    else {
+      let i = 0; textEl.textContent = '';
+      const step = () => {
+        if (t !== G.token) return;
+        i++; textEl.textContent = chars.slice(0, i).join('');
+        const ch = chars[i - 1];
+        if (!BOT && i % 2 === 0 && !/[\s、。…―！？「」]/.test(ch)) sfx('blip');
+        if (i >= chars.length) { typing = null; render(); textbox.classList.add('done'); if (BOT) { botMemo(); botNext(); } return; }
+        const mult = /[。！？]/.test(ch) ? 7 : /[、…]/.test(ch) ? 3 : 1;
+        typing = setTimeout(step, ms * mult);
+      };
+      typing = setTimeout(step, ms);
+    }
+    pend.finish = finish;
+    pend.isTyping = () => !!typing;
+    if (BOT && !ms) botNext();
+  });
+}
+function botNext() {
+  const p = pend; if (!p) return;
+  if (FAST) { yieldFast().then(() => { if (pend === p) { pend = null; p.resolve(); } }, () => {}); return; }
+  setTimeout(() => { if (pend === p) { pend = null; p.resolve(); } }, 260);
+}
+function advance() {
+  if (!pend || !pend.finish || G.state === 'choice') return;
+  if (pend.isTyping()) { pend.finish(); return; }
+  if (!textbox.classList.contains('done')) return;
+  const p = pend; pend = null; sfx('card'); p.resolve();
+}
+$('#textbox').addEventListener('click', advance);
+$('#stage').addEventListener('click', advance);
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  if (!$('#logPanel').hidden || !$('#menuPanel').hidden || !$('#notePanel').hidden) { if (e.key === 'Escape') closePanels(); return; }
+  if (G.state === 'choice' && /^[1-4]$/.test(e.key)) { const c = choicesEl.querySelectorAll('.card')[+e.key - 1]; if (c) c.click(); return; }
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (!$('#nightcard').hidden) $('#nightcard').click(); else if (!$('#game').hidden) advance(); }
+});
+
+// ───────── 選択 ─────────
+let choiceCount = 0, actHintShown = false;
+// 小さな行為（ことばのかわりに）
+const ACT_ICON = {
+  nod: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/><path d="M12 13.2v1.6"/></svg>',
+  coffee: '<svg viewBox="0 0 24 24"><path d="M5 10h11v4a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 11.5h1.5a2.2 2.2 0 0 1 0 4.4H16"/><path d="M8.5 3.5q-1 1.5 0 3M11.5 3.5q-1 1.5 0 3"/></svg>',
+  record: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5"/></svg>',
+  window: '<svg viewBox="0 0 24 24"><rect x="4.5" y="3.5" width="15" height="17" rx="1"/><path d="M12 3.5v17M4.5 12h7.5"/><path d="M14.5 9q2 1 4-1M14.5 14q2 1 4-1"/></svg>',
+};
+function actText(a) {
+  if (a.t) return a.t;
+  return { nod: '（黙って、うなずく）', coffee: '（珈琲を淹れなおす）', record: '（レコードをかける ―「' + (a.song || '') + '」）', window: '（窓を少し開ける）' }[a.a] || '（……）';
+}
+function choose(opts) {
+  const t = G.token;
+  // 条件つきのカード：手帳のことば（memo）や条件式（if）を満たすものだけ
+  const shown = opts.filter(o => (!o.memo || hasMemo(o.memo)) && (!o.if || cond(o.if)));
+  if (shown.length) opts = shown;
+  setState('choice');
+  app.classList.add('choosing');
+  choicesEl.innerHTML = '';
+  const allActs = opts.every(o => o.act);
+  if (allActs) {
+    if (!actHintShown || G.night === 1) choicesEl.insertAdjacentHTML('beforeend', '<div class="hint acthint">ことばのかわりに、できること。</div>');
+    actHintShown = true;
+  } else if (G.night === 1 && choiceCount < 2 && G.seg && G.seg.type === 'visitor' && !opts.every(o => o.free)) choicesEl.insertAdjacentHTML('beforeend', '<div class="hint">近すぎず、遠すぎず。この人に、ちょうどいい距離の言葉を。</div>');
+  choiceCount++;
+  const cards = opts.map((o, i) => {
+    const b = document.createElement('button');
+    b.className = 'card' + (o.act ? ' act' : '') + (o.memo ? ' memo' : '');
+    if (o.act) b.innerHTML = '<span class="ai">' + (ACT_ICON[o.act] || '') + '</span>' + escH(o.t);
+    else if (o.memo) {
+      const m = G.memos.find(x => x.id === o.memo);
+      b.innerHTML = '<span class="mt">✎ 手帳の「' + escH(m ? m.word : '') + '」</span>' + escH(o.t);
+    } else b.textContent = o.t;
+    b.style.animationDelay = (i * 0.07) + 's';
+    choicesEl.appendChild(b); return b;
+  });
+  layout();
+  return new Promise((resolve, reject) => {
+    pend = { resolve, reject };
+    let done = false;
+    const pick = (i) => {
+      if (done || t !== G.token) return; done = true;
+      sfx('pick');
+      cards.forEach((c, j) => c.classList.add(j === i ? 'picked' : 'gone'));
+      const p = pend;
+      wait(FAST ? 0 : BOT ? 150 : 380).then(() => {
+        app.classList.remove('choosing'); choicesEl.innerHTML = ''; layout();
+        if (pend === p) { pend = null; resolve(opts[i]); }
+      }, () => {});
+    };
+    cards.forEach((c, i) => c.addEventListener('click', (e) => { e.stopPropagation(); pick(i); }));
+    if (BOT && opts.every(o => o.free)) setTimeout(() => pick(Math.floor(Math.random() * opts.length)), FAST ? 0 : 500);
+    else if (BOT) {
+      const goodIdx = opts.map((o, i) => (o.k === 'just' || (o.k === 'odd' && o.good !== false)) ? i : -1).filter(i => i >= 0);
+      const badIdx = opts.map((o, i) => i).filter(i => !goodIdx.includes(i));
+      let i;
+      if (goodIdx.length && (Math.random() < 0.6 || !badIdx.length)) i = goodIdx[Math.floor(Math.random() * goodIdx.length)];
+      else i = (badIdx.length ? badIdx : opts.map((o, j) => j))[Math.floor(Math.random() * (badIdx.length || opts.length))];
+      setTimeout(() => pick(i), FAST ? 0 : 500);
+    }
+  });
+}
+function applyChoice(c) {
+  if (c.set) [].concat(c.set).forEach(f => G.flags.add(f));
+  if (typeof c.dj === 'number') G.dj += c.dj;
+  if (typeof c.cat === 'number') G.cat += c.cat;
+  const seg = G.seg;
+  if (seg && seg.type === 'visitor' && !c.free) {
+    const id = seg.id, cnt = G.counts[id] || (G.counts[id] = { n: 0, g: 0 });
+    let m = G.meters[id] || 0;
+    const good = c.k === 'just' || (c.k === 'odd' && c.good !== false);
+    cnt.n++; if (good) cnt.g++;
+    if (typeof c.m === 'number') m += c.m;
+    else if (c.k === 'near') m -= 2;
+    else if (c.k === 'far') m += 2;
+    else if (good) m = m > 0 ? Math.max(0, m - 2) : Math.min(0, m + 2);
+    G.meters[id] = Math.max(-8, Math.min(8, m));
+    drawMeter(true);
+  }
+  updateTest();
+}
+function resultOf(id) {
+  const c = G.counts[id] || { n: 0, g: 0 }, m = Math.abs(G.meters[id] || 0);
+  if (c.n === 0) return 'mid';
+  if (c.g >= c.n - 1 && m <= 2) return 'good';
+  if (c.g <= Math.floor(c.n / 3) || m >= 5) return 'bad';
+  return 'mid';
+}
+
+// ───────── 間（返事を受け取る一拍）・小さな行為 ─────────
+const BEAT_POOL = { just: ['steam', 'silence', 'lamp'], near: ['lamp', 'silence'], far: ['silence', 'noise'], odd: ['lamp', 'steam', 'silence'], free: ['silence', 'lamp'] };
+function pickBeat(c) {
+  if (c.beat) return c.beat;
+  const phone = G.seg && STORY.visitors[G.seg.id] && STORY.visitors[G.seg.id].phone;
+  let pool = (BEAT_POOL[c.free ? 'free' : c.k] || BEAT_POOL.just).slice();
+  if (phone) pool = pool.map(b => b === 'steam' ? 'noise' : b).concat(['noise']);
+  const p2 = pool.filter(b => b !== G.lastBeat);
+  const list = p2.length ? p2 : pool;
+  return list[Math.floor(Math.random() * list.length)];
+}
+async function beat(kind, ms) {
+  if (!kind || kind === 'none' || FAST) return;
+  const t = G.token;
+  G.lastBeat = kind;
+  app.classList.add('beat', 'beat-' + kind);
+  if (kind === 'noise') sfx('static'); else if (kind === 'silence') sfx('hush'); else if (kind === 'lamp') sfx('meter');
+  const base = { silence: 1300, lamp: 1100, steam: 1400, noise: 950, nod: 900, window: 1300 }[kind] || 1000;
+  const sp = settings.speed === 'instant' ? 0.45 : settings.speed === 'fast' ? 0.7 : 1;
+  try { await wait(BOT ? 120 : (ms || base * sp)); }
+  finally { app.classList.remove('beat', 'beat-' + kind); }
+}
+let songTm = null;
+function showSong(song) {
+  const el = $('#songChip'); el.textContent = '♪「' + song.replace(/^「|」$/g, '') + '」';
+  el.classList.add('on'); clearTimeout(songTm); songTm = setTimeout(() => el.classList.remove('on'), 9000);
+}
+async function playAct(c) {
+  const a = c.act;
+  if (a === 'coffee') { sfx('pour'); await beat('steam', 1500); }
+  else if (a === 'record') { sfx('record'); if (c.song) showSong(c.song); await beat('lamp', 1400); }
+  else if (a === 'window') { sfx('wind'); await beat('window', 1400); }
+  else if (a === 'nod') { await beat('nod', 1000); }
+}
+
+// ───────── スクリプト実行 ─────────
+async function runSteps(steps) {
+  const t = G.token;
+  for (const st of steps || []) {
+    guard(t);
+    if (typeof st === 'string') { await showLine(null, st); continue; }
+    if (Array.isArray(st)) { await showLine(st[0] || null, st[1], st[2]); continue; }
+    if (!st || typeof st !== 'object') continue;
+    if (st.acts) {
+      // 言葉を返す以外の小さな行為。メーターにも結果にも数えない
+      const opts = st.acts.map(a => Object.assign({}, a, { act: a.a, t: actText(a), free: true }));
+      const c = await choose(opts); guard(t);
+      applyChoice(c);
+      await showLine(null, c.t); guard(t);
+      await playAct(c); guard(t);
+      const r = await runSteps(c.r || []); if (r) return r;
+      if (c.go) return c.go;
+      continue;
+    }
+    if (st.choice) {
+      const c = await choose(st.choice); guard(t);
+      applyChoice(c);
+      await showLine(/^[（(]/.test(c.t) ? null : 'me', c.t); guard(t);
+      if (c.act) await playAct(c); else await beat(pickBeat(c));
+      guard(t);
+      const r = await runSteps(c.r || []); if (r) return r;
+      if (c.go) return c.go;
+      continue;
+    }
+    if ('if' in st) { const r = await runSteps(cond(st.if) ? st.then : (st.else || [])); if (r) return r; continue; }
+    if (st.go) return st.go;
+    if (st.end) return '__end';
+    if (st.show) setPortrait(st.show, null);
+    if (st.f || st.say !== undefined) setFace(st.f, st.say);
+    if (st.set) [].concat(st.set).forEach(f => G.flags.add(f));
+    if (typeof st.dj === 'number') G.dj += st.dj;
+    if (typeof st.cat === 'number') G.cat += st.cat;
+    if (st.time) setClock(st.time);
+    if (st.sfx) sfx(st.sfx);
+    if (st.fx) setFx(st.fx);
+    if (st.reveal && G.pkey !== 'none') { G.revealed.add(G.pkey); refreshName(); }
+    if (st.name) {
+      if (G.pkey === 'dj') G.djName = st.name; else if (G.pkey === 'cat') G.catName = st.name; else G.names[G.pkey] = st.name;
+      refreshName();
+    }
+    if (st.song) showSong(st.song);
+    if (st.beat) { await beat(st.beat); guard(t); }
+    if (st.pause && !FAST) await wait(BOT ? Math.min(st.pause, 300) : st.pause);
+    updateTest();
+  }
+  return null;
+}
+async function runScript(script) {
+  let label = 'start', guardN = 0;
+  while (label && script[label] && guardN++ < 300) label = await runSteps(script[label]);
+}
+
+// ───────── セグメント ─────────
+async function runVisitor(id) {
+  const v = STORY.visitors[id]; if (!v) return;
+  if (v.when && !cond(v.when)) return;
+  G.seg = { type: 'visitor', id }; G.meters[id] = 0; G.counts[id] = { n: 0, g: 0 };
+  logSec((v.anon && !G.revealed.has(id) ? v.anon : vName(v)) + '（' + (v.label || '') + '）');
+  setState('talk');
+  setPortrait(id, v.face);
+  pwrap.style.opacity = 0; await wait(FAST ? 0 : 50); pwrap.style.opacity = '';
+  if (!v.phone) sfx('door');
+  await runScript(v.script);
+  G.res[id] = resultOf(id);
+  const o = v.outcome && v.outcome[G.res[id]];
+  if (o) setFace(o.f, o.say);
+  updateTest();
+  await wait(FAST ? 0 : BOT ? 200 : 900);
+  G.seg = null; showMeter(false);
+}
+async function runFrameSeg(type, data) {
+  if (!data) return;
+  G.seg = { type, id: type };
+  logSec(type === 'dj' ? G.djName : G.catName);
+  setState('talk');
+  setPortrait(type, data.face);
+  if (type === 'dj') sfx('door');
+  await runScript(data.script || { start: [] });
+  if (type === 'dj' && G.night === 2) G.djAt2 = G.dj;
+  G.seg = null;
+}
+async function runScene(key, data) {
+  if (data.if && !cond(data.if)) return;
+  G.seg = { type: 'scene', id: key };
+  if (data.title) logSec(data.title);
+  setState('talk');
+  setPortrait(data.show || 'none', data.face || null);
+  await runScript(data.script || { start: [] });
+  G.seg = null;
+}
+async function runPlain(steps, title) {
+  G.seg = { type: 'frame', id: 'frame' };
+  if (title) logSec(title);
+  setPortrait('none');
+  await runSteps(steps);
+  G.seg = null;
+}
+
+// ───────── 夜 ─────────
+function snapshot(n) {
+  return { v: 1, night: n, flags: Array.from(G.flags), res: G.res, meters: G.meters, counts: G.counts, dj: G.dj, djAt2: G.djAt2, cat: G.cat, catName: G.catName, revealed: Array.from(G.revealed), names: G.names, memos: G.memos };
+}
+function restore(s) {
+  G.flags = new Set(s.flags || []); G.res = s.res || {}; G.meters = s.meters || {}; G.counts = s.counts || {};
+  G.dj = s.dj || 0; G.djAt2 = typeof s.djAt2 === 'number' ? s.djAt2 : null; G.cat = s.cat || 0; G.catName = s.catName || '黒猫'; G.revealed = new Set(s.revealed || []); G.names = s.names || {};
+  G.memos = Array.isArray(s.memos) ? s.memos : [];
+}
+function resetState() {
+  G.flags = new Set(); G.res = {}; G.meters = {}; G.counts = {}; G.dj = 0; G.djAt2 = null; G.cat = 0; G.djName = 'ナツメ'; G.catName = '黒猫';
+  G.revealed = new Set(); G.names = {}; G.ending = null; choiceCount = 0; G.memos = []; G.lastBeat = ''; actHintShown = false;
+}
+function showOnly(id) {
+  ['#title', '#nightcard', '#summary', '#letter', '#ending'].forEach(s => { $(s).hidden = s !== id; });
+  $('#game').hidden = !!id && id !== '#game-over';
+}
+
+async function nightCard(n) {
+  const N = STORY.nights[n] || {};
+  const nc = $('#nightcard');
+  $('#ncStation').textContent = N.jingle || 'FMあさなぎ　ナツメの真夜中便';
+  $('#ncTitle').textContent = N.title || NIGHT_KANJI[n];
+  $('#ncSub').textContent = N.sub ? '「' + N.sub + '」' : '';
+  showOnly('#nightcard'); nc.classList.remove('go'); void nc.offsetWidth; nc.classList.add('go');
+  sfx('tune'); setTimeout(() => sfx('jingle'), 1700);
+  const t = G.token;
+  await new Promise((res, rej) => {
+    let done = false;
+    const end = () => { if (done) return; done = true; nc.removeEventListener('click', end); clearTimeout(tm); t === G.token ? res() : rej(ABORT); };
+    const tm = setTimeout(end, FAST ? 30 : BOT ? 2600 : 4200);
+    setTimeout(() => nc.addEventListener('click', end), 500);
+    pend = { resolve: end, reject: rej };
+  });
+  pend = null;
+  showOnly(null); $('#game').hidden = false;
+}
+
+async function playNight(n) {
+  const t = G.token;
+  const N = STORY.nights[n];
+  if (!N) { await playEpilogue(); return; }
+  G.night = n; G.log = []; lsSet(SAVE_KEY, snapshot(n));
+  app.classList.remove('titlemode', 'morning', 'fx-dark', 'fx-candle', 'fx-dawn');
+  setState('talk');
+  G.baseWeather = N.weather || 'none';
+  setWeather('none');
+  $('#hudNight').textContent = N.title || NIGHT_KANJI[n];
+  await nightCard(n); guard(t);
+  setWeather(G.baseWeather);
+  const clock = N.clock || {};
+  setClock(clock.open || '23:40');
+  await runPlain(N.prologue || [], '開店前'); guard(t);
+  for (const seg of N.order || []) {
+    setClock(clock[seg]);
+    if (seg === 'dj') await runFrameSeg('dj', N.dj);
+    else if (seg === 'cat') await runFrameSeg('cat', N.cat);
+    else if (N.scenes && N.scenes[seg]) await runScene(seg, N.scenes[seg]);
+    else await runVisitor(seg);
+    guard(t);
+  }
+  setClock(clock.close || '4:50');
+  await runPlain(N.monologue || [], '閉店後'); guard(t);
+  // 閉店後の場面（帰り道など）
+  for (const seg of N.after || []) {
+    if (N.scenes && N.scenes[seg]) { if (clock[seg]) setClock(clock[seg]); await runScene(seg, N.scenes[seg]); guard(t); }
+  }
+  await nightSummary(n); guard(t);
+  if (n >= 5) { lsSet(SAVE_KEY, snapshot(6)); await playEpilogue(); return; }
+  await morningLetters(N); guard(t);
+  await playNight(n + 1);
+}
+async function morningLetters(N) {
+  const t = G.token;
+  // 翌朝
+  app.classList.remove('fx-dark', 'fx-candle'); setWeather('none'); app.classList.add('morning');
+  $('#game').hidden = false; setState('nightEnd');
+  if (N.morning && N.morning.length) { setClock('13:10'); await runPlain(N.morning, '翌朝'); guard(t); }
+  for (const id of (N.order || []).filter(o => STORY.visitors[o] && G.res[o])) {
+    const v = STORY.visitors[id], r = G.res[id] || 'mid', L = v.letters && ((G.res.konbini && v.letters[r + '_' + route()]) || v.letters[r]);
+    if (L) { await showLetter(v.short || v.name, v.label || '', L, v.letterStyle); guard(t); }
+  }
+  app.classList.remove('morning');
+}
+
+async function nightSummary(n) {
+  const N = STORY.nights[n];
+  setState('nightEnd');
+  const box = $('#summary');
+  const ids = (N.order || []).filter(o => STORY.visitors[o] && G.res[o]);
+  const tags = { good: '届いた', mid: '少し届いた', bad: '届かなかった' };
+  let h = '<h2>' + (N.title || NIGHT_KANJI[n]) + '、夜が明ける</h2><div class="sub">' + (ids.length ? '今夜、相談室に来た人' : '今夜は、相談の椅子に座る人はいなかった') + '</div>';
+  ids.forEach((id, i) => {
+    const v = STORY.visitors[id], r = G.res[id] || 'mid', o = (v.outcome && v.outcome[r]) || { f: 'neutral', say: '' };
+    h += '<div class="srow" style="animation-delay:' + (0.3 + i * 0.5) + 's"><div class="av"><div id="sv' + i + '" class="f-' + o.f + '" style="position:absolute;inset:0"></div></div><div><div class="nm">' + vName(v) + '</div><div class="lb">' + (v.label || '') + '</div><div class="fc">' + faceSVG(o.f) + '<span>' + o.say + '</span></div><div class="tag">― ' + tags[r] + ' ―</div></div></div>';
+  });
+  h += '<button class="btn" id="sumNext">郵便受けを見にいく</button>';
+  box.innerHTML = h;
+  ids.forEach((id, i) => {
+    const r = G.res[id] || 'mid', v = STORY.visitors[id], o = (v.outcome && v.outcome[r]) || { f: 'neutral' };
+    const holder = $('#sv' + i);
+    holder.style.cssText = 'position:absolute;inset:0';
+    holder.innerHTML = '<div class="portrait-mini f-' + o.f + '" style="position:absolute;inset:0"><img src="' + v.img + '" alt="" style="width:100%;height:100%;object-fit:cover;filter:' + miniFilter(o.f) + '"></div>';
+  });
+  showOnly('#summary'); box.scrollTop = 0;
+  sfx('clock');
+  await waitButton('#sumNext', FAST ? 40 : BOT ? 1500 : 0);
+  showOnly(null); $('#game').hidden = false;
+}
+function miniFilter(f) {
+  return ({ tense: 'saturate(.85) brightness(.92)', sad: 'brightness(.78) saturate(.6)', tear: 'brightness(.75) saturate(.5)', smile: 'brightness(1.07) saturate(1.08)', warm: 'brightness(1.1) sepia(.15) saturate(1.1)', laugh: 'brightness(1.13) saturate(1.15)', blush: 'brightness(1.05)', shy: 'brightness(1.02)', surprise: 'brightness(1.1)', angry: 'contrast(1.15) saturate(1.2)', closed: 'brightness(.94)', sleepy: 'brightness(.85)' })[f] || 'none';
+}
+function waitButton(sel, botMs) {
+  const t = G.token;
+  return new Promise((res, rej) => {
+    const b = $(sel); let done = false;
+    const go = () => { if (done) return; done = true; sfx('page'); pend = null; t === G.token ? res() : rej(ABORT); };
+    b.addEventListener('click', go);
+    pend = { resolve: go, reject: (e) => { done = true; rej(e); } };
+    if (BOT) setTimeout(go, botMs);
+  });
+}
+
+// ───────── 手紙 ─────────
+let vertical = true;
+function setVertical(v) {
+  vertical = v;
+  const p = $('#lPaper'); p.classList.toggle('vert', v); p.classList.toggle('horz', !v);
+  $('#lToggle').textContent = v ? '横書きで読む' : '縦書きで読む';
+  $('#lNote').textContent = v ? '← 左へ送って読む' : '↓ 下へ送って読む';
+  const lt = $('#lText'); lt.scrollTop = 0; lt.scrollLeft = 0;
+}
+$('#lToggle').addEventListener('click', () => { sfx('page'); setVertical(!vertical); });
+async function showLetter(name, label, L, style) {
+  setState('letter');
+  const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const paras = String(L.text).split('\n');
+  let html = paras.map(p => '<p>' + (p.trim() ? (style === 'shaky' ? shaky(esc(p)) : esc(p)) : '&nbsp;') + '</p>').join('');
+  if (L.sign) html += '<span class="sign">' + esc(L.sign) + '</span>';
+  $('#lText').innerHTML = html;
+  $('#lWho').innerHTML = esc(name) + 'からの手紙<small>' + esc(label) + '</small>';
+  const p = $('#lPaper'); p.className = 'paper ' + (style ? 'st-' + style : '');
+  setVertical(vertical);
+  showOnly('#letter');
+  sfx('letter');
+  await waitButton('#lNext', FAST ? 700 : 2000);
+  showOnly(null); $('#game').hidden = false;
+}
+function shaky(s) { return Array.from(s).map((ch, i) => '<span class="ch" style="transform:translate(' + ((i * 7 % 5) - 2) * 0.35 + 'px,' + ((i * 3 % 5) - 2) * 0.3 + 'px) rotate(' + ((i * 11 % 7) - 3) * 0.8 + 'deg)">' + ch + '</span>').join(''); }
+
+// ───────── エピローグ ─────────
+function decideEnding() { const c = connHigh(), d = djHigh(); if (djRoute() && d) return 'E'; return c && d ? 'A' : c ? 'B' : d ? 'C' : 'D'; }
+async function playEpilogue() {
+  const t = G.token;
+  const E = STORY.epilogue || {};
+  G.night = 6; G.log = [];
+  app.classList.remove('titlemode', 'morning', 'fx-dark', 'fx-candle');
+  G.baseWeather = 'none'; setWeather('none');
+  showOnly(null); $('#game').hidden = false;
+  $('#hudNight').textContent = 'エピローグ';
+  setState('epilogue');
+  setClock('6:20');
+  await runPlain(E.intro || [], 'エピローグ'); guard(t);
+  if (STORY.nights[5]) { await morningLetters(STORY.nights[5]); guard(t); $('#hudNight').textContent = 'エピローグ'; }
+  setState('epilogue');
+  const epiPeople = async (group, ids, suffix) => {
+    for (const id of ids) {
+      const p = group && group[id], v = STORY.visitors[id];
+      if (!p || !v || !G.res[id]) continue; // その周に来なかった人（七海ルートの遥など）は飛ばす
+      const r = G.res[id];
+      G.seg = { type: 'epi', id }; G.revealed.add(id);
+      logSec(vName(v) + suffix);
+      setPortrait(id, (v.outcome && v.outcome[r]) || null);
+      await runSteps(p[r] || []); guard(t);
+    }
+    G.seg = null;
+  };
+  await epiPeople(E.people, ['ol', 'salaryman', 'musician', 'grandpa', 'mother', 'madam'], 'の春'); guard(t);
+  setState('epilogue');
+  G.route = route(); updateTest();
+  const life = E.life && E.life[G.route];
+  if (life) { await runPlain(life, '彼の物語'); guard(t); }
+  setState('epilogue');
+  // 深く描く糸：その回に結ばれた糸から最大2本（まだ見ていない糸を優先）
+  const rk = routeKey(), seenT = lsGet(THREAD_KEY, []), has = (k) => E.threads && E.threads[k];
+  const tied = (DEEP_BY_ROUTE[rk] || DEEP_TIES).filter(k => tieOn(k) && has(k));
+  const pickT = tied.filter(k => !seenT.includes(k)).concat(tied.filter(k => seenT.includes(k)));
+  G.deep = rk === 'natsume' && has('N1') ? ['N1'].concat(pickT.slice(0, 1)) : pickT.slice(0, 2);
+  updateTest();
+  for (const k of G.deep) { await runPlain(E.threads[k], '糸'); guard(t); setState('epilogue'); }
+  G.seg = null;
+  setState('epilogue');
+  await runPlain(E.dawn || [], '夜明け前'); guard(t);
+  G.ending = decideEnding(); updateTest();
+  const hk = djHigh() ? 'high' : 'low', dl = E.djLetter && (E.djLetter[hk + '_' + routeKey()] || E.djLetter[hk + '_' + G.route] || E.djLetter[hk]);
+  if (dl) { await showLetter(G.djName, 'FMあさなぎ・深夜番組DJ', dl, 'dj'); guard(t); }
+  setState('epilogue');
+  const en = (E.endings || {})[G.ending] || { name: ENDINGS[G.ending], quote: '', script: [] };
+  await runPlain(en.script || [], en.name || ENDINGS[G.ending]); guard(t);
+  showEnding(G.ending, en);
+}
+function seenHTML(cur, curRoute) {
+  const seen = lsGet(END_KEY, []), seenR = lsGet(ROUTE_KEY, []);
+  const li = (map, list, c) => Object.keys(map).map(k => '<li class="' + (list.includes(k) ? '' : 'no') + '">' + (list.includes(k) ? map[k] + (k === c ? '（今回）' : '') : '？？？') + '</li>').join('');
+  return '<b>見たエンディング</b><ul>' + li(ENDINGS, seen, cur) + '</ul><b class="b2">彼の行く先</b><ul class="r3">' + li(ROUTES, seenR, curRoute) + '</ul>';
+}
+// まだ見ていない物語があるか（数値は出さない）
+function unseenStory() {
+  if (!lsGet(PLAYED_KEY, false)) return false;
+  const e = lsGet(END_KEY, []), r = lsGet(ROUTE_KEY, []), th = lsGet(THREAD_KEY, []);
+  return Object.keys(ENDINGS).some(k => !e.includes(k)) || Object.keys(ROUTES).some(k => !r.includes(k)) || DEEP_TIES.some(k => !th.includes(k));
+}
+function showEnding(k, en) {
+  const seen = lsGet(END_KEY, []); if (!seen.includes(k)) { seen.push(k); lsSet(END_KEY, seen); }
+  const rk = G.route || route(), seenR = lsGet(ROUTE_KEY, []); if (!seenR.includes(rk)) { seenR.push(rk); lsSet(ROUTE_KEY, seenR); }
+  const seenT = lsGet(THREAD_KEY, []); (G.deep || []).forEach(x => { if (!seenT.includes(x)) seenT.push(x); }); lsSet(THREAD_KEY, seenT);
+  lsSet(PLAYED_KEY, true);
+  const rn = ((STORY.epilogue || {}).routes || {})[rk];
+  lsSet(SAVE_KEY, null);
+  const esc = (s) => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const box = $('#ending');
+  box.innerHTML = '<div class="lbl">ENDING</div><h2>' + esc(en.name || ENDINGS[k]) + '</h2>' + (en.quote ? '<p class="quote">「' + esc(en.quote) + '」</p>' : '') + '<p class="route">彼の行く先 ── ' + esc((rn && rn.name) || ROUTES[rk]) + '</p><div class="seen">' + seenHTML(k, rk) + (unseenStory() ? '<p class="unseen">この町には、まだ見ていない夜がある。</p>' : '') + '</div><div class="eb"><button class="btn" id="endTitle">タイトルへ</button></div>';
+  showOnly('#ending'); app.classList.add('fx-dawn');
+  box.classList.toggle('instant', BOT); box.scrollTop = 0;
+  sfx('jingle');
+  setState('end');
+  $('#endTitle').addEventListener('click', () => { sfx('page'); toTitle(); });
+}
+
+// ───────── タイトル・メニュー ─────────
+function toTitle() {
+  abortAll();
+  if (typing) { clearTimeout(typing); typing = null; }
+  G.seg = null; G.night = 0; G.ending = null;
+  app.className = 'titlemode'; setWeather('none'); rainAmb(false);
+  app.classList.remove('choosing'); choicesEl.innerHTML = '';
+  closePanels();
+  showOnly('#title');
+  const s = lsGet(SAVE_KEY, null);
+  const cont = $('#btnCont');
+  cont.disabled = !(s && s.night >= 1);
+  cont.textContent = s && s.night >= 1 ? 'つづきから（' + (s.night >= 6 ? 'エピローグ' : NIGHT_KANJI[s.night]) + '）' : 'つづきから';
+  $('#seenTitle').innerHTML = seenHTML() + (unseenStory() ? '<p class="unseen">まだ見ていない物語がある。</p>' : '');
+  setState('title');
+}
+function start(fromSave) {
+  abortAll();
+  const s = fromSave ? lsGet(SAVE_KEY, null) : null;
+  resetState();
+  if (s) restore(s);
+  const n = s ? s.night : 1;
+  const t = G.token;
+  (n >= 6 ? playEpilogue() : playNight(n)).catch((e) => { if (e !== ABORT && t === G.token) { console.warn(e); toTitle(); } });
+}
+$('#btnNew').addEventListener('click', () => {
+  sfx('pick');
+  const s = lsGet(SAVE_KEY, null);
+  if (s && s.night > 1) { $('#confirmPanel').hidden = false; return; }
+  start(false);
+});
+$('#cfYes').addEventListener('click', () => { closePanels(); start(false); });
+$('#btnCont').addEventListener('click', () => { sfx('pick'); start(true); });
+function closePanels() { $$('.panel').forEach(p => { p.hidden = true; }); }
+$$('[data-close]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); sfx('card'); closePanels(); }));
+$$('.panel').forEach(p => p.addEventListener('click', (e) => { if (e.target === p) closePanels(); }));
+$('#btnLog').addEventListener('click', (e) => { e.stopPropagation(); sfx('page'); openLog(); });
+function openMenu(inGame) { $('#toTitleRow').hidden = !inGame; $('#noteRow').hidden = $('#noteOptRow').hidden = !inGame; refreshSpeed(); $('#menuPanel').hidden = false; }
+function openNote() {
+  const b = $('#noteBody'); let h = '', lastKey = '';
+  G.memos.forEach(m => {
+    const key = m.night + '|' + m.who;
+    if (key !== lastKey) { h += '<p class="nn">' + (NIGHT_KANJI[m.night] || '') + '　' + escH(m.name || '') + '</p>'; lastKey = key; }
+    h += '<p class="ne">・<b>' + escH(m.word) + '</b>　' + escH(m.note) + '</p>';
+  });
+  b.innerHTML = h || '<p class="empty">まだ、なにも書いていない。</p>';
+  closePanels(); $('#notePanel').hidden = false; b.scrollTop = b.scrollHeight;
+}
+$('#btnNote').addEventListener('click', (e) => { e.stopPropagation(); sfx('page'); openNote(); });
+$('#btnMenu').addEventListener('click', (e) => { e.stopPropagation(); sfx('card'); openMenu(true); });
+$('#btnTitleMenu').addEventListener('click', (e) => { e.stopPropagation(); sfx('card'); openMenu(false); });
+$('#btnToTitle').addEventListener('click', () => { sfx('page'); toTitle(); });
+function refreshSpeed() { $$('#speedOpt button').forEach(b => b.classList.toggle('on', b.dataset.sp === settings.speed)); }
+$$('#speedOpt button').forEach(b => b.addEventListener('click', () => { settings.speed = b.dataset.sp; lsSet(SET_KEY, settings); refreshSpeed(); sfx('card'); }));
+$('#muteOpt').addEventListener('click', () => { setMute(!AU.muted); if (!AU.muted) { initAudio(); sfx('card'); } });
+$$('.btnMute').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); setMute(!AU.muted); if (!AU.muted) { initAudio(); sfx('card'); } }));
+
+// ───────── フィルムグレイン ─────────
+(function grain() {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 140;
+    const x = c.getContext('2d'), d = x.createImageData(140, 140);
+    for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    x.putImageData(d, 0, 0);
+    $('#grain').style.backgroundImage = 'url(' + c.toDataURL() + ')';
+  } catch (e) { /* グレインなしで続行 */ }
+})();
+
+// ───────── 起動 ─────────
+setMute(AU.muted);
+toTitle();
+layout();
+if (BOT) setTimeout(() => { if (G.state === 'title') { lsSet(SAVE_KEY, null); start(false); } }, 300);
+})();
+</script>
+</body>
+</html>

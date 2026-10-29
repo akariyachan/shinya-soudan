@@ -27,7 +27,7 @@ const problems = new Map();
 const note = (k) => problems.set(k, (problems.get(k) || 0) + 1);
 
 function play() {
-  const G = { flags: new Set(), res: {}, meters: {}, counts: {}, dj: 0, djAt2: null, cat: 0, seg: null };
+  const G = { flags: new Set(), res: {}, meters: {}, counts: {}, dj: 0, djAt2: null, cat: 0, seg: null, memos: new Set() };
   const okId = (id) => G.res[id] === 'good' || G.res[id] === 'mid';
   const wakai = () => okId('mother') && okId('madam') && ['mother_letter', 'n4_bridge', 'sumie_coaster'].filter(f => G.flags.has(f)).length >= 2;
   const tieOn = (name) => {
@@ -93,8 +93,13 @@ function play() {
   };
   const run = (steps) => {
     for (const st of steps || []) {
-      if (typeof st === 'string' || Array.isArray(st) || !st) continue;
-      if (st.choice) { const c = pick(st.choice); apply(c); const r = run(c.r); if (r) return r; if (c.go) return c.go; continue; }
+      if (Array.isArray(st)) { if (st[2] && st[2].memo && Math.random() < 0.7) G.memos.add(st[2].memo); continue; }
+      if (typeof st === 'string' || !st) continue;
+      if (st.acts) { const a = st.acts[Math.floor(Math.random() * st.acts.length)]; const r = run(a.r); if (r) return r; if (a.go) return a.go; continue; }
+      if (st.choice) {
+        let opts = st.choice.filter(o => (!o.memo || G.memos.has(o.memo)) && (!o.if || cond(o.if)));
+        if (!opts.length) opts = st.choice;
+        const c = pick(opts); apply(c); const r = run(c.r); if (r) return r; if (c.go) return c.go; continue; }
       if ('if' in st) { const r = run(cond(st.if) ? st.then : (st.else || [])); if (r) return r; continue; }
       if (st.go) return st.go;
       if (st.set) [].concat(st.set).forEach(f => G.flags.add(f));
@@ -123,7 +128,9 @@ function play() {
       G.meters[seg] = 0; G.counts[seg] = { n: 0, g: 0 };
       runScript(v.script); G.res[seg] = resultOf(seg);
     }
-    G.seg = 'frame' + n; run(N.monologue); run(N.morning);
+    G.seg = 'frame' + n; run(N.monologue);
+    for (const seg of N.after || []) { const sc = N.scenes && N.scenes[seg]; if (sc && (!sc.if || cond(sc.if))) runScript(sc.script); }
+    run(N.morning);
   }
   const E = S.epilogue || {};
   G.seg = 'epilogue';

@@ -39,7 +39,13 @@ const KINDS = ['near', 'far', 'just', 'odd'];
 const STYLES = 'round neat pencil shaky receipt staff child brush sketch'.split(' ');
 const SPEAKERS = new Set(IDS.concat(['me', 'dj', 'cat', 'radio']));
 
-const len = (s) => String(s).replace(/\s/g, '').length;
+const len = (s) => String(s).replace(/[\s《》]/g, '').length;
+const ACTS = ['nod', 'coffee', 'record', 'window'];
+const BEATS = ['steam', 'lamp', 'noise', 'silence', 'none'];
+const BANNED_SONGS = ['真夜中のメリーゴーラウンド', '午前二時の自販機', '青いシグナル'];
+// ブラッシュアップ第1回：相談者ごとの「小さな行為」「心のメモ」の集計
+let tally = null; // { acts, memos:Set, memoCards:Set }
+const memoDefs = new Map(); // memo id -> where
 
 function checkCond(c, where) {
   if (typeof c !== 'string') { err(`${where}: if は文字列で`); return; }
@@ -65,17 +71,57 @@ function checkSteps(steps, where, labels, ctxKind) {
     const w = `${where}[${i}]`;
     if (typeof st === 'string') { if (!st.trim()) warn(`${w}: 空文字`); return; }
     if (Array.isArray(st)) {
-      if (st.length !== 2 || typeof st[0] !== 'string' || typeof st[1] !== 'string') { err(`${w}: セリフは ['話者','本文']`); return; }
+      if (st.length < 2 || st.length > 3 || !(typeof st[0] === 'string' || st[0] === null) || typeof st[1] !== 'string') { err(`${w}: セリフは ['話者','本文'] か ['話者','本文',{memo,note}]`); return; }
       if (/^「.*」$/.test(st[1])) warn(`${w}: セリフに「」は不要`);
+      const marks = (st[1].match(/《[^》]+》/g) || []).length;
+      if (st.length === 3) {
+        const m = st[2];
+        if (!m || typeof m.memo !== 'string' || !/^[a-z0-9_]+$/.test(m.memo)) err(`${w}: memo の id が不正`);
+        else {
+          if (marks !== 1) err(`${w}: memo つきの行には《ことば》がちょうど1つ必要`);
+          if (!m.note) warn(`${w}: memo に note（手帳に書く一文）がない`);
+          else if (len(m.note) > 60) warn(`${w}: memo の note が長い(${len(m.note)}字)`);
+          if (memoDefs.has(m.memo) && memoDefs.get(m.memo) !== where.split('.')[0]) err(`${w}: memo id "${m.memo}" が別の人と重複`);
+          memoDefs.set(m.memo, where.split('.')[0]);
+          if (tally) tally.memos.add(m.memo);
+        }
+      } else if (marks) err(`${w}: 《》は memo つきの行にだけ使う`);
       return;
     }
     if (!st || typeof st !== 'object') { err(`${w}: 不明なステップ`); return; }
     const keys = Object.keys(st);
+    if ('acts' in st) {
+      if (!Array.isArray(st.acts) || st.acts.length < 2) { err(`${w}: acts は2つ以上`); return; }
+      if (st.acts.length > 4) warn(`${w}: acts が5つ以上`);
+      const seen = new Set();
+      st.acts.forEach((a, j) => {
+        const aw = `${w}.acts[${j}]`;
+        if (!ACTS.includes(a.a)) err(`${aw}: a が不正 (${a.a})`);
+        if (seen.has(a.a)) err(`${aw}: 同じ行為が二度ある`); seen.add(a.a);
+        if (a.a === 'record') {
+          if (!a.song) err(`${aw}: record には song（曲名）が必要`);
+          else if (BANNED_SONGS.some(b => a.song.includes(b))) err(`${aw}: その曲は店の棚にない (${a.song})`);
+        }
+        if (a.t && len(a.t) > 48) warn(`${aw}: カード文が長い`);
+        if (a.set) warn(`${aw}: 行為でフラグを立てない`);
+        if (!Array.isArray(a.r) || !a.r.length) err(`${aw}: r（反応）がない`);
+        else checkSteps(a.r, aw + '.r', labels, ctxKind);
+        if (a.go && !labels.includes(a.go)) err(`${aw}: go 先ラベル "${a.go}" がない`);
+      });
+      if (tally) tally.acts++;
+      return;
+    }
     if ('choice' in st) {
       if (!Array.isArray(st.choice) || st.choice.length < 2) { err(`${w}: choice は2枚以上`); return; }
-      if (st.choice.length > 4) warn(`${w}: カードが5枚以上`);
+      if (st.choice.filter(c => !c.memo && !c.if).length > 4) warn(`${w}: カードが5枚以上`);
+      if (st.choice.length > 5) warn(`${w}: 条件つきを含めて6枚以上`);
+      if (st.choice.filter(c => !c.memo && !c.if).length < 2) err(`${w}: 条件なしのカードが2枚未満`);
       st.choice.forEach((c, j) => {
         const cw = `${w}.choice[${j}]`;
+        if (c.memo) { if (tally) tally.memoCards.add(c.memo); pendingMemoCards.push([c.memo, cw]); }
+        if (c.if) checkCond(c.if, cw);
+        if (c.beat && !BEATS.includes(c.beat)) err(`${cw}: beat "${c.beat}" が不明`);
+        if (c.act && !ACTS.includes(c.act)) err(`${cw}: act "${c.act}" が不明`);
         if (!c.t) err(`${cw}: t がない`);
         else if (len(c.t) > 48) warn(`${cw}: カード文が長い(${len(c.t)}字)`);
         if (ctxKind === 'visitor' && !c.free && !KINDS.includes(c.k)) err(`${cw}: k が不正 (${c.k})`);
@@ -99,7 +145,8 @@ function checkSteps(steps, where, labels, ctxKind) {
       else if (k === 'sfx') { if (!SFX.includes(st.sfx)) err(`${w}: sfx "${st.sfx}" が不明`); }
       else if (k === 'fx') { if (!FX.includes(st.fx)) err(`${w}: fx "${st.fx}" が不明`); }
       else if (k === 'show') { if (!(IDS.includes(st.show) || ['dj', 'cat', 'none'].includes(st.show))) err(`${w}: show "${st.show}" が不明`); }
-      else if (['set', 'dj', 'cat', 'time', 'reveal', 'name', 'pause', 'end'].includes(k)) { /* ok */ }
+      else if (['set', 'dj', 'cat', 'time', 'reveal', 'name', 'pause', 'end', 'song'].includes(k)) { /* ok */ }
+      else if (k === 'beat') { if (!BEATS.includes(st.beat)) err(`${w}: beat "${st.beat}" が不明`); }
       else if (k === 'free') { /* ok */ }
       else err(`${w}: 不明なキー "${k}"`);
     }
@@ -117,7 +164,11 @@ function simulate(script, runs) {
         const st = arr[i];
         if (typeof st === 'string') chars += len(st);
         else if (Array.isArray(st)) chars += len(st[1]);
-        else if (st.choice) {
+        else if (st.acts) {
+          const a = st.acts[Math.floor(Math.random() * st.acts.length)];
+          const g = run(a.r || []); if (g) return g;
+          if (a.go) return a.go;
+        } else if (st.choice) {
           if (!st.choice.every(c => c.free)) choices++;
           const c = st.choice[Math.floor(Math.random() * st.choice.length)];
           const g = run(c.r || []); if (g) return g;
@@ -139,7 +190,7 @@ function simulate(script, runs) {
 function totalChars(x) {
   if (typeof x === 'string') return len(x);
   if (Array.isArray(x)) return x.reduce((a, b) => a + totalChars(b), 0);
-  if (x && typeof x === 'object') return Object.entries(x).reduce((a, [k, v]) => a + (['img', 'id', 'k', 'f', 'go', 'set', 'if', 'sfx', 'fx', 'show', 'letterStyle', 'time'].includes(k) ? 0 : totalChars(v)), 0);
+  if (x && typeof x === 'object') return Object.entries(x).reduce((a, [k, v]) => a + (['img', 'id', 'k', 'f', 'go', 'set', 'if', 'sfx', 'fx', 'show', 'letterStyle', 'time', 'a', 'memo', 'beat', 'act', 'who'].includes(k) ? 0 : totalChars(v)), 0);
   return 0;
 }
 
@@ -151,6 +202,7 @@ function checkScript(scr, where, kind) {
 }
 
 let grand = 0;
+const pendingMemoCards = [];
 console.log('■ 相談者');
 for (const id of IDS) {
   const v = S.visitors && S.visitors[id];
@@ -159,7 +211,13 @@ for (const id of IDS) {
   ['name', 'short', 'label', 'img', 'night'].forEach(k => { if (!v[k]) err(`${id}: ${k} がない`); });
   if (v.img && !fs.existsSync(path.join(ROOT, v.img))) err(`${id}: 画像 ${v.img} がない`);
   if (v.letterStyle && !STYLES.includes(v.letterStyle)) err(`${id}: letterStyle 不明`);
+  tally = { acts: 0, memos: new Set(), memoCards: new Set() };
   const sim = checkScript(v.script, id, 'visitor');
+  console.log(`    小さな行為 ${tally.acts}か所 / 心のメモ ${tally.memos.size}語 / 手帳のカード ${tally.memoCards.size}枚`);
+  if (tally.acts < 2) warn(`${id}: 小さな行為（acts）が2か所未満`);
+  if (tally.memos.size < 1) warn(`${id}: 心のメモ（《》）がない`);
+  if (tally.memoCards.size < 1) warn(`${id}: 手帳のことばを踏まえたカード（memo）がない`);
+  tally = null;
   if (sim) {
     console.log(`    本文: 最小${sim.minChars}字 / 平均${sim.avgChars}字 / 最大${sim.maxChars}字、選択 ${sim.minChoices}〜${sim.maxChoices}回`);
     if (sim.minChars < 3000) warn(`${id}: 最小経路の本文が3000字未満`);
@@ -189,6 +247,7 @@ for (let n = 1; n <= 5; n++) {
   if (!N) { err(`第${n}夜: 未作成`); continue; }
   ['title', 'sub', 'order', 'clock', 'prologue', 'monologue'].forEach(k => { if (!N[k]) err(`第${n}夜: ${k} がない`); });
   (N.order || []).forEach(o => { if (!IDS.includes(o) && o !== 'dj' && o !== 'cat' && !(N.scenes && N.scenes[o])) err(`第${n}夜: order に不明 ${o}`); });
+  (N.after || []).forEach(o => { if (!(N.scenes && N.scenes[o])) err(`第${n}夜: after に不明 ${o}`); if ((N.order || []).includes(o)) err(`第${n}夜: ${o} が order と after の両方にある`); });
   for (const [k, sc] of Object.entries(N.scenes || {})) {
     if (sc.if) checkCond(sc.if, `第${n}夜.scenes.${k}.if`);
     const s = checkScript(sc.script, `第${n}夜.scenes.${k}`, 'frame');
@@ -241,6 +300,8 @@ else {
   grand += totalChars(E);
 }
 
+for (const [m, cw] of pendingMemoCards) if (!memoDefs.has(m)) err(`${cw}: 手帳のことば "${m}" がどこにも書かれていない`);
+console.log(`- 心のメモ 合計 ${memoDefs.size}語`);
 console.log(`\n総文字数（story/ の本文概算）: 約${grand.toLocaleString()}字`);
 console.log(errors ? `エラー ${errors} 件、注意 ${warns} 件` : `エラーなし（注意 ${warns} 件）`);
 process.exit(errors ? 1 : 0);
