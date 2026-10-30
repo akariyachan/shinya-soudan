@@ -44,11 +44,20 @@ const REVIEWED = {
 };
 for (const [n, digest] of Object.entries(REVIEWED)) if (hash(M.functions[n] || functionSource(M.html, n)) !== digest) throw new Error(`要確認: ${n} の実装が変わりました。図の注釈と進行モデルを確認して REVIEWED を更新してください。`);
 const coverage = sample(M, A, runs);
+const proofFile = path.join(ROOT, 'docs/obsidian/data/reachability.json');
+if (!fs.existsSync(proofFile)) throw new Error('先に node tools/prove-reachability.js を実行してください。');
+const proof = JSON.parse(fs.readFileSync(proofFile, 'utf8'));
+for (const [file, digest] of Object.entries({ ...M.sources, ...proof.sourceHashes })) {
+  if (proof.sourceHashes[file] !== digest || hash(fs.readFileSync(path.join(ROOT, file), 'utf8')) !== digest)
+    throw new Error(`到達性の証拠が古い: ${file}。node tools/prove-reachability.js を再実行してください。`);
+}
 const files = new Map();
 const kanji = ['', '第一夜', '第二夜', '第三夜', '第四夜', '第五夜'];
 const e = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\|/g, '&#124;').replace(/\r?\n/g, ' ');
 const cell = s => String(s ?? '—').replace(/\|/g, '&#124;').replace(/\n/g, '<br>');
 const code = s => '`' + String(s) + '`';
+const reproduce = id => `${code(`node tools/prove-reachability.js --replay=${id}`)}（${link(`${OUT}/data/reachability.json`, '選択列・メモ回収列・既読集合')} の ${code(`witnesses["${id}"]`)}）`;
+const definite = row => `確定：${row.status}。` + (row.witness ? reproduce(row.witness) : row.basis);
 const short = (s, n = 26) => String(s || '').length > n ? String(s).slice(0, n - 1) + '…' : String(s || '');
 const table = (heads, rows) => '\n' + [heads, heads.map(() => '---'), ...rows].map(r => '| ' + r.map(cell).join(' | ') + ' |').join('\n') + '\n';
 let page = '';
@@ -82,7 +91,7 @@ md('00_全体マップ.md', '深夜の相談室 — 全体マップ', () => {
   lines.push(node('epi', 'エピローグ：電話→第五夜の手紙→春→人生→深い糸→夜明け'), arrow('n5', 'epi'), node('ed', 'ED A〜E：糸の本数・最終dj・djroute', 'end'), arrow('epi', 'ed'));
   return `最初にこの図で夜の順番を確認し、気になる夜だけリンク先を開いてください。※の相談者は条件により来訪しません。各夜にナツメ・猫の場面、閉店後の独白、追加の短い場面があります。\n${diagram(lines)}\n` +
     kanji.slice(1).map((k, i) => `- [[nights/${k}|${k}]]：${S.nights[i + 1].sub}`).join('\n') +
-    '\n- [[10_ルートとED|ルート・人物の糸・ED]]\n- [[20_フラグ依存関係|選択が後にどう響くか]]\n- [[30_検証と要確認|確認できた経路とデバッグ候補]]\n- [[00_全体マップ.canvas|動かせるCanvas]]\n\n' +
+    '\n- [[10_ルートとED|ルート・人物の糸・ED]]\n- [[20_フラグ依存関係|選択が後にどう響くか]]\n- [[30_検証と要確認|確定した到達性と再現手順]]\n- [[00_全体マップ.canvas|動かせるCanvas]]\n\n' +
     '## 読み方\n\n進行分岐はシーンやラベルの移動、状態分岐は数値・フラグによる表示や判定の変化、物語上の分岐は人物関係や人生の描写への影響です。進行は夜別図、状態は表と依存図、物語上の意味は根拠を添えた説明に分けています。\n\n実線＝進行、条件ラベル付き実線＝条件つき進行、破線＝状態への依存、ひし形＝選択・判定、太枠＝重要なルート判定、丸い終端＝終了。図中の選択番号は、元の `choice` / `acts` 配列の1始まりです。会話の全文は省き、同じ遷移先をまとめています。\n\n' +
     `## 実装上の要点\n\n- 人生の ${code('route()')} は七海／遥／ひとりの3種。ナツメは ${code('routeKey()')} が返す追加の表示キーで、人生はひとりです。EDとは別の軸です。\n- 第二夜は湊→ナツメ→梢の順。${code('djAt2')} はナツメの場面終了時に記録されるため、湊終了直後の人生判定は暫定です。\n- 第三夜の朝の ${code('kiri_ask → kiri_job')} を飛ばさず確認してください。\n- 第五夜の朝と手紙はエピローグの冒頭の電話の後です。\n\n進行の根拠：${engine('playNight')}、${engine('morningLetters')}、${engine('playEpilogue')}。設定資料の旧案より実装を優先しています。`;
 });
@@ -175,7 +184,7 @@ md('10_ルートとED.md', 'ルート・人物の糸・エンディング', () =
     const meanings = { T1: '七海と桐島', T2: '七海と湊', T3: '陽向と梢', T4: 'コースターから仕事へ', T5: '遥とひより', T6: '遥と澄江の和解', T7: '源さんと千鶴の電話', T8: '三好の三つの夜' };
     return [t, meanings[t], code(condition)];
   });
-  return `[[00_全体マップ|全体へ]]\n\n## 三好の人生：route()\n\n上から先に成立した条件を採用します。${engine('route')}。第二夜の湊終了時は暫定、ナツメ終了後は入口の値が保存されます。関数は都度評価され、ルート文字列そのものを第二夜に保存する実装ではありません。\n${diagram(lines)}\n## ナツメ：djRoute() と routeKey()\n${diagram(dj)}\n根拠：${engine('djAt2High')}、${engine('djRoute')}、${engine('routeKey')}。${code('djAt2')} は第一夜と第二夜の累積値。現在の dj とは別です。\n\n## 最終ED：人生ルートと独立した判定\n${diagram(ed)}\n根拠：${engine('decideEnding')}。E が優先され、N1 は conn の本数に入りません。${code('keep_light')} はEの判定条件ではありません。ナツメ入口に入っても、最終djが低い場合はBまたはDです。\n` +
+  return `[[00_全体マップ|全体へ]]\n\n## 三好の人生：route()\n\n上から先に成立した条件を採用します。${engine('route')}。第二夜の湊終了時は暫定、ナツメ終了後は入口の値が保存されます。関数は都度評価され、ルート文字列そのものを第二夜に保存する実装ではありません。\n${diagram(lines)}\n## ナツメ：djRoute() と routeKey()\n${diagram(dj)}\n根拠：${engine('djAt2High')}、${engine('djRoute')}、${engine('routeKey')}。${code('djAt2')} は第一夜と第二夜の累積値。現在の dj とは別です。\n\n## 最終ED：人生ルートと独立した判定\n${diagram(ed)}\n根拠：${engine('decideEnding')}。E が優先され、N1 は conn の本数に入りません。${code('keep_light')} はEの判定条件ではありません。ナツメ入口に入っても、最終djが低い場合はBまたはDです。alone/A・B・Cも到達可能（実エンジンで再生確認済み）。全ルート×EDの確定判定・選択列は [[30_検証と要確認#ルート×ED（全行・確定）|検証結果]] にあります。\n` +
     table(['ED', '到達条件'], [['E', `djRoute & dj ≥ ${C.DJ_HIGH}`], ['A', `!djRoute & conn & dj ≥ ${C.DJ_HIGH}`], ['B', `conn & dj < ${C.DJ_HIGH}`], ['C', `!djRoute & !conn & dj ≥ ${C.DJ_HIGH}`], ['D', `!conn & dj < ${C.DJ_HIGH}`]]) +
     `\n## 人物同士のつながり：T1〜T8・N1\n\n${engine('tieOn')}。${code('ok:ID')} はgoodまたはmid。未訪問の人物はokになりません。物語上の名称は ${link('story/BIBLE.md', 'BIBLE §6・§11')} と実装の ${code('epilogue.threads / life')} に対応します。\n` + table(['糸', '物語上のつながり', '成立条件'], [...ties, ['N1', 'ナツメ・店・番組の灯り', 'djRoute()（connには含めない）']]) +
     '\n### 七海・三好・仕事と歌\n\n関係図の矢印は対応する人物・状態を示します。成立条件は上表を参照してください。\n' +
@@ -213,52 +222,37 @@ md('20_フラグ依存関係.md', 'フラグ・数値の依存関係', () => {
   return text;
 });
 
-// コードの優先順位・実行条件から説明できる「未観測の理由」。推測と実証を分離する。
-function reason(c) {
-  const p = c.source.pointer, x = c.expression, b = c.value;
-  if (b && x === 'konbini_words' && (/\.life\.alone\.|\.script\.a\d\.|\.threads\.N1\.|\.endings\.E\.|\.visitors\.mother\.script\.start.*else.*else/.test(p))) return '到達不能の疑い（実装上の矛盾）：konbini_wordsならrouteはnanami優先、またはharuka。alone／djrouteの文脈ではONにならない。';
-  if (b && /\.people\.(ol|salaryman|musician|grandpa)\.bad\./.test(p) && /^tie:T/.test(x)) return '到達不能の疑い（実装上の矛盾）：この人物の結果はbadだが、その糸は同じ人物のokを必要とする。';
-  if (x === 'pop_job' && !b && /\.visitors\.mother\./.test(p)) return '到達不能の疑い：外側がroute:haruka & !kiri_jobなのでpopJobは必ずtrue。';
-  if ((!b && ['draw1', 'designer'].includes(x) || b && x === 'draw0') && /(?:\.visitors\.(child|freelance)\.|\.life\.haruka\.)/.test(p)) return '到達不能の疑い：harukaではkiri_jobまたはpop_jobでdesigner。draw2でなければdraw1になり、draw0にならない。';
-  if (!b && x === 'route:alone' && /\.miyoshi\.script\.quiet\./.test(p)) return '到達不能の疑い：nanami/harukaは先行goで別ラベルへ移動し、quietはaloneでのみ実行される。';
-  if (!b && x === 'keep_light' && /\.threads\.N1\./.test(p)) return '到達不能の疑い：djrouteなら第五夜keepを通り、全カードでkeep_lightが立つ。N1もdjroute専用。';
-  return '要確認：今回のランダムモデルで未観測。構造上の到達不能は証明していない。';
-}
-md('30_検証と要確認.md', '検証・デバッグの入口', () => {
-  let commit = '取得不可';
-  try {
-    const gitEntry = path.join(ROOT, '.git');
-    const gitDir = fs.statSync(gitEntry).isDirectory() ? gitEntry : path.resolve(ROOT, fs.readFileSync(gitEntry, 'utf8').trim().replace(/^gitdir: /, ''));
-    const head = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
-    if (!head.startsWith('ref: ')) commit = head;
-    else {
-      const name = head.slice(5), loose = path.join(gitDir, name);
-      commit = fs.existsSync(loose) ? fs.readFileSync(loose, 'utf8').trim() : fs.readFileSync(path.join(gitDir, 'packed-refs'), 'utf8').split('\n').find(l => l.endsWith(' ' + name)).split(' ')[0];
-    }
-  } catch {}
-  const rows = [];
-  for (const route of ['nanami', 'haruka', 'alone', 'natsume']) for (const ending of Object.keys(C.ENDINGS)) {
-    const key = route + '/' + ending, n = coverage.combinations[key] || 0;
-    const impossible = ending === 'E' && route !== 'natsume' || route === 'natsume' && ['A', 'C'].includes(ending);
-    rows.push([code(key), n, n ? 'ランダムモデルで到達' : impossible ? '判定条件上、不可（Eの優先／djRoute条件）' : '構造上の候補・未検証（到達証明なし）']);
-  }
-  let text = `[[00_全体マップ|全体へ]]\n\n## 対象と証拠\n\n対象コミット：${code(commit)}。HTMLから読み込む現行storyだけを対象とし、v0/・v1/・tools/old/は除外。${code('story/BIBLE.md')} は物語の意味、${code('DIRECTION.md')} は更新意図の補助に使い、判定は実装を正本としました。ソースSHA-256は ${link(`${OUT}/data/branch-model.json`, 'branch-model.json')}。ネットワーク照合を再生成時に自動で行うことはありません。\n\n## 再生成時のランダム検証\n\n固定シード ${coverage.seed}、${coverage.runs}周。ちょうどよいカードを選ぶ確率 ${coverage.profiles.map(p => p * 100 + '%').join(' / ')} を周ごとに交代し、メモ回収は各出現で70%。既読糸の集合もシードで変えています。割合はテスト用の偏りで、プレイヤーの分布予測ではありません。\n\n${coverage.method}\n\n条件評価・ルート・糸・結果・ED・選択の採点はindex.htmlから実関数を抜き出して実行。同期の進行モデルでorder→monologue→after→morning、および実装のエピローグ選択順を追います。取得した条件と配列位置を毎回記録するため、静的な候補と実測を区別できます。\n`;
-  text += table(['ED', 'ランダムモデルで到達した周数'], Object.entries(C.ENDINGS).map(([k, v]) => [k + ' ' + v, coverage.endings[k] || 0]));
-  text += '\n### ルート×ED\n' + table(['routeKey / ED', '観測周数', '根拠の区分'], rows);
-  text += `\n各観測組み合わせの最初の選択列・スキップしたイベント・既読糸・最終状態を ${link(`${OUT}/data/coverage.json`, 'coverage.json の witnesses')} に保存しています。run番号と確率方針だけで再生できるとは限らないため、choices・seenThreads・状態も併記しています。\n\n### 条件によってスキップされるイベント\n`;
-  text += table(['イベント', '実行条件', 'スキップ観測周数', '参照'], A.nights.flatMap(n => n.events.filter(e => e.condition).map(e => [e.id, code(e.condition), coverage.skipped[e.id] || 0, ref(M.locations.get(objFor(S.nights[n.night], e.id)))])));
-  const unreachable = A.scripts.flatMap(s => s.structurallyUnreachable.map(label => [ref(s.source), code(label)]));
-  text += '\n## 構造だけの到達性\n\n各scriptのstartからgo/endと条件両側・全カードをたどったラベルの到達性です。条件同士の矛盾や状態更新はここでは解決しません。' + (unreachable.length ? table(['script', '構造上到達できないラベル'], unreachable) : '\n\n構造上孤立したラベルは見つかりませんでした。これはすべての条件分岐が実際に通れることを意味しません。') +
-    `\n\nランダムモデルで未到達のラベル：${coverage.unseenLabels.length}。未選択カード：${coverage.unseenOptions.length}。未観測の条件の片側：${coverage.unseenConditions.length}。未選択・未到達の全IDはcoverage.jsonに残しています。\n\n## 未観測の条件と、到達不能の疑い\n\n次の「疑い」は外側の条件・派生関数・優先順位を読んだ推論です。一般的な到達可能性の形式証明や全組み合わせテストはしていません。falseはelse側（else本文がなければ何もせず続行）です。\n`;
-  text += table(['参照元', '未観測の条件側', '判断・根拠'], coverage.unseenConditions.map(c => [ref(c.source), `${code(c.expression)} = ${c.value}`, reason(c)]));
-  text += '\n## 優先して確認したい点\n\n- `dj_candle` は設定されますが条件参照がありません。意図的な記録か、差分の付け忘れかを作者が判断できます。\n- 上表のharukaにおけるdraw0、bad本文中の対応するtieなどは、残した予備テキストの可能性もあります。ゲームは変更していません。\n- 第二夜のナツメ終了前後、第三夜の朝前後で状態が変わるので、途中のセーブや再開を含むテストでは時点を区別してください。\n- BIBLE §12-5には旧閾値9/18が残ります。実装は入口' + C.DJ_ROUTE_NEED + '・終幕' + C.DJ_HIGH + '。DIRECTIONの末尾「v1.1」で調整が記録されています。\n\n## 既存ツールとの違い\n\n`tools/check-story.js` は構文・ラベル・形式・字数検査に使います。その内部ランダム探索は条件を無作為に選ぶため、全編の到達証明ではありません。`tools/simulate.js` の集計も参考用です。現行エンジンと比べ、freeカードの採点除外、endの停止、peopleの来訪結果チェック、深い糸の最大2本・既読優先などに差があり、この資料の根拠は今回の別モデルにしています。既存ツールは変更していません。\n\n## 未検証・要確認の範囲\n\n- DOM操作、クリック操作、表示時刻、実時間、UIの再描画、localStorageからの復元・過去バージョンのセーブ互換性はこのモデルの対象外。実ブラウザーでの全編網羅は未実施です。\n- 既読集合のすべての組み合わせ、全カード順列、メモを各時点で回収する全パターン、閾値の境界に届く全経路は網羅していません。\n- 関数形式の条件は今回の現行データにはありません。将来追加された場合は「要確認」と記録します。物語の意味はソースとBIBLEにある範囲だけ付け、セリフから独自の因果を推定していません。\n- 生成器のREVIEWEDは、意味を付けた説明と進行処理を点検した関数本体のハッシュです。エンジンの判定／進行を変えた場合は意図的に生成を停止するので、モデルと説明を再確認して更新してください。定数やstoryの内容は自動で読み直します。\n\n## 次の自動テストへ渡す情報\n\nbranch-model.jsonのconditions（if/when）・choices（memo、free、m、k、good、set、go）・writes（set/add）・scripts（構造上の遷移）がイベントIDとソース位置で結びつきます。coverage.jsonのhitsは条件両側・ラベル・選択カードの観測回数、witnessesは代表経路です。将来は未観測側の条件を目標に、実ブラウザーで選択列を再生して確認できます。生成済みの代表経路は `node tools/test-branchmaps.js` で、index.htmlの実際の非同期進行関数（UI・音・待機はスタブ）でも再生し、結果・フラグ・距離・返答数・深い糸・EDが一致することを確認できます。この再生ではメモ出現時にすべて回収し、同じ選択列が表示可能であることを確認します。';
-  if (coverage.issues.length) text += '\n\n### 実行モデルの警告\n\n' + coverage.issues.map(x => '- ' + x).join('\n');
-  return text;
+md('30_検証と要確認.md', '検証結果（確定）', () => {
+  const X = proof.exploration, L = proof.stateSpaceLowerBound;
+  let text = `[[00_全体マップ|全体へ]]\n\n## 判定結果\n\n従来の「到達不能の疑い」「要確認」だった条件${proof.conditionResults.length}行はすべて確定しました。${proof.conditionResults.filter(r => r.status === '到達不能（証明）').length}行は到達不能（証明）、${proof.conditionResults.filter(r => r.status === '到達可能').length}行は到達可能です。ルート×ED全20行と、条件付きイベント全5行も下表で確定しています。\n\n${link(`${OUT}/data/reachability.json`, 'reachability.json')} にソースSHA-256、探索規模、形式証明の前提・有限領域検査、全再現列を保存しています。ゲーム本体・story・check-story.js・simulate.jsは変更していません。\n\n## 探索規模と完了状況\n`;
+  text += table(['項目', '結果'], [
+    ['探索', '実エンジンの非同期進行を使用したDFS。選択・メモ・終端で状態を記録し、間の決定的進行は1辺にまとめる。状態＝フラグ・全カウンタ・結果・メモ・継続位置・既読集合。同一状態を正規化した完全な文字列で重複除去（射影・数値の丸めなし）'],
+    ['ユニーク状態数（実測）', X.uniqueStates],
+    ['遷移数（列挙／実際に追跡）', `${X.transitions} / ${X.executedTransitions}。前者は展開した状態の全選択辺、後者はそのうち実行した辺。初期状態への入力列の再生は二重計上しない`],
+    ['重複による合流／終端状態', `${X.mergedStates} / ${X.terminalStates}`],
+    ['探索完了', X.completed ? '完了' : `未完了：${X.uniqueStates >= X.maxStates ? 'ユニーク状態数の上限' : '正規化キーのメモリ予算'}に到達。停止理由の原文はreachability.jsonに記録`],
+    ['残った探索経路', X.pendingPaths],
+    ['資源予算', `状態${X.maxStates}件、正規化キー${X.maxSerializedKeyBytes} bytes。実測キー${X.serializedKeyBytes} bytes（JSオブジェクト等のメモリは別）`],
+    ['既読糸の初期根', `${X.initialThreadSets}集合を用意、${X.initialThreadSetsStarted}集合で探索開始。全根を走査したという意味ではない`],
+    ['状態空間の構成的下限', `終端だけで少なくとも${L.minimumTerminalStates}状態。全状態数の算出値ではない`],
+  ]);
+  text += `\n完全状態の終端数だけでも予算を大幅に超えるため、この環境の予算内では全木探索を完了できませんでした。${L.argument}\n\n**未到達だったという事実だけで到達不能とは判定していません。** 未到達行はコードからの形式的論証にフォールバックし、実関数の有限領域検査と制御フローの前提をassertで検証しました。route/popJob/designer/drawLevelは${proof.proofs.routeWords.cases}ケース、badとtieの矛盾は${proof.proofs.badTie.cases}ケース、decideEndingは全8個のBoolean入力を検査しています。数値は関数が区別する閾値の同値類を使います。対象関数のハッシュが変わると証明を停止します。\n\n## 条件側の確定判定（全行）\n\nfalseはelse側（本文がなければ何もせず続行）。「到達可能」は表示可能なカードとメモ回収／未回収を含む全選択列を、実際の非同期進行関数で初期状態から独立にリプレイ済みです。\n`;
+  text += table(['参照元', '条件側', '確定判定・根拠／再現手順'], proof.conditionResults.map(r => [ref(r.source), `${code(r.expression)} = ${r.value}`, definite(r)]));
+  text += '\n## ルート×ED（全行・確定）\n\nroute()のaloneとrouteKey()のnatsumeを区別します。alone/A・B・Cも到達可能です。A/Cの再現列は第二夜DJ終了時djAt2=2、終幕dj=20。AはT1/T3/T6/T7の4本、Cは0本です。\n';
+  text += table(['routeKey / ED', '参考ランダム観測周数', '確定判定・根拠／再現手順'], proof.routeEndingResults.map(r => [code(r.key), coverage.combinations[r.key] || 0, definite(r)]));
+  text += '\n## 条件で実行・スキップされるイベント（全行・確定）\n';
+  text += table(['イベント', '条件', '実行', 'スキップ', '参照'], proof.eventResults.map(r => [r.id, code(r.expression), definite(r.sides[0]), definite(r.sides[1]), ref(r.source)]));
+  text += `\n## 再現・再生成\n\n${'```sh'}\nnode tools/prove-reachability.js\nnode tools/prove-reachability.js --check\nnode tools/prove-reachability.js --replay=alone/A\nnode tools/prove-reachability.js --replay=alone/C\nnode tools/generate-branchmaps.js\nnode tools/generate-branchmaps.js --check\n${'```'}\n\n${code('--max-states=100000')} と ${code('--max-key-bytes=268435456')} が探索の既定予算です。増減できますが、停止時点・実測件数も変わります。同じソースと予算からのJSON・資料生成は決定的です。証拠とソースのハッシュが合わない場合、生成器は古い判定の再利用を拒否します。\n\nJSONの各witnessは初期seenThreads、全actions（カードIDと各メモのtake）、文言付きchoices、最終state、実際に評価した条件側を持ちます。番号や確率だけに依存せず、表示される選択列そのものを再生します。カードの非表示、余った入力、最終状態の不一致はエラーです。\n\n## 対象と検証範囲\n\n${proof.scope}\n\nHTMLから読み込む現行storyだけを対象とし、v0/・v1/・tools/old/は除外します。runSteps/runScript/runVisitor/runFrameSeg/runScene/runPlain/playNight/morningLetters/playEpilogueはindex.htmlから関数本体を読み込みます。追加した観測フックとUI入力以外は実装の処理を実行し、既存の同期進行モデルを到達性の証明には使いません。既存モデルのランダム列は到達候補としてのみ利用し、すべて実エンジンでリプレイし直しています。\n\nDOM描画、クリック座標、音、待ち時間、改変したセーブ、過去版のセーブ互換性は対象外です。ブラウザーのUI操作を網羅したという主張はしていません。未完了のDFSから全木網羅を主張することもありません。\n\n## コードから確定した補足\n\n- ${code('dj_candle')} は設定元があり、条件／判定関数での参照は0件です。\n- harukaのdraw0やbad本文中の対応tieは、上記の証明により現行実装で到達不能です。作者の意図は判定に含めません。\n- 第二夜DJ終了時にdjAt2が保存され、第三夜の朝にkiri_jobが追加される場合があります。時点を混同せずに状態を記録します。\n- BIBLE §12-5の閾値9/18と現行実装の入口${C.DJ_ROUTE_NEED}・終幕${C.DJ_HIGH}には差があります。到達性の根拠には実装の値を使います。\n\n## 既存ツールと参考集計\n\ncheck-story.jsは構文・ラベル・形式・字数検査、simulate.jsは参考集計です。既存ツールは変更していません。generate-branchmaps.jsの固定シード${coverage.seed}・${coverage.runs}周の集計も参考値として残します。観測数0を到達不能の根拠にはしません。coverage.jsonの同期モデルと、今回のreachability.jsonの実エンジン探索・リプレイ・形式証明を区別してください。\n`;
+  text += table(['ED', '参考ランダム観測周数', '確定判定・再現手順'], Object.entries(C.ENDINGS).map(([ending, name]) => {
+    const row = proof.routeEndingResults.find(r => r.key.endsWith('/' + ending) && r.witness);
+    return [ending + ' ' + name, coverage.endings[ending] || 0, definite(row)];
+  }));
+  return text.trimEnd();
 });
 
 md('details/条件索引.md', '条件・状態索引（詳細参照用）', () => {
-  let text = '[[../00_全体マップ|全体へ]] · [[../20_フラグ依存関係|依存関係へ]]\n\n図を読むときはこの一覧を飛ばせます。元の配列へ戻るための全件索引です。配列番号は0始まり。条件両側の数はモデル上の評価回数で、評価されなかった条件は0です。\n\n## if / when の全参照\n';
-  text += table(['ソースと配列位置', '条件', 'true回数', 'false回数'], A.conditions.map(c => [ref(c.source, true), code(c.expression), coverage.hits[`${c.source.id}:${c.type}:true`] || 0, coverage.hits[`${c.source.id}:${c.type}:false`] || 0]));
+  let text = '[[../00_全体マップ|全体へ]] · [[../20_フラグ依存関係|依存関係へ]]\n\n図を読むときはこの一覧を飛ばせます。元の配列へ戻るための全件索引です。配列番号は0始まり。条件両側の数は同期ランダムモデル上の参考評価回数で、0は到達不能を意味しません。従来未確定だった全20条件側の確定判定と再現手順は [[../30_検証と要確認|検証結果（確定）]] と reachability.json にあります。\n\n## if / when の全参照\n';
+  text += table(['ソースと配列位置', '条件', 'true参考回数', 'false参考回数'], A.conditions.map(c => [ref(c.source, true), code(c.expression), coverage.hits[`${c.source.id}:${c.type}:true`] || 0, coverage.hits[`${c.source.id}:${c.type}:false`] || 0]));
   text += '\n## set / dj / cat の全設定\n' + table(['ソースと配列位置', '状態', '操作', '値'], A.writes.map(w => [ref(w.source, true), code(w.state), w.operation, w.value]));
   text += '\n## エンジンでの通常フラグ参照\n' + table(['フラグ', '判定関数'], flagNames.filter(f => flagFunctions(f).length).map(f => [code(f), flagFunctions(f).map(engine).join('<br>')]));
   return text;
@@ -284,7 +278,7 @@ const safeA = { ...A, scripts: A.scripts };
 putJSON('data/branch-model.json', { schemaVersion: 1, sourceHashes: M.sources, constants: C, engineFunctions: M.functions, ...safeA });
 putJSON('data/coverage.json', { schemaVersion: 1, sourceHashes: M.sources, ...coverage });
 
-md('README.md', 'Obsidianで分岐図を読む', () => `最初に [[00_全体マップ]] または [[00_全体マップ.canvas]] を開いてください。\n\n## 開き方\n\n1. Obsidianの「保管庫としてフォルダを開く」で、このリポジトリのルートを開きます。\n2. ${code(OUT + '/00_全体マップ.md')} をリーディングビューで開きます。Mermaidは標準機能で表示されます。\n3. 自由に配置したい場合は ${code(OUT + '/00_全体マップ.canvas')} を開き、各夜のファイルカードから詳細へ進みます。Canvasも標準機能です。\n\nCanvasのfileはVaultルートからの相対パスです。docs/obsidianだけを別Vaultへコピーする場合は、Canvasの各fileから ${code(OUT + '/')} を取り除いてください（元ソースへの相対リンクも調整が必要）。\n\n## 再生成\n\nリポジトリのルートで実行します。Node.jsの標準ライブラリだけを使用し、ネットワーク接続は不要です。\n\n${'```sh'}\nnode tools/generate-branchmaps.js\nnode tools/generate-branchmaps.js --check\nnode tools/check-branchmaps.js\nnode tools/test-branchmaps.js\nnode tools/check-story.js --quiet\nnode tools/simulate.js 3000 0.6\n${'```'}\n\n既定は固定シード・3000周。${code('--runs=10000')} で周数を増やせます（生成内容も変わります）。${code('--check')} は既存資料と再生成結果が一致するかを検査し、書き換えません。${code('check-branchmaps.js')} は生成器が使うMermaid構文の制限された文法、CanvasのJSON・ノード・矢印・リンク先、Markdownのローカルリンクを検査します。Mermaid本体での追加検査方法もそのツールの説明にあります。\n\n生成時にCanvasも上書きされます。手で配置を変える場合は別名でコピーしてください。手書きの物語上の説明を変える場合は生成器を編集します。重要な判定／進行関数が変わると、古い注釈を出さないよう生成が停止します。\n\n## 作成ファイル\n\n- 00_全体マップ.md / .canvas：最初に読む俯瞰図\n- nights/第一夜.md〜第五夜.md：進行、合流、選択と状態の表\n- 10_ルートとED.md：人生、ナツメ、人物の糸、追加エピソード、最終ED\n- 20_フラグ依存関係.md：フラグ・数値・メモの設定と参照\n- 30_検証と要確認.md：観測した経路、スキップ、到達不能の疑い、未検証範囲\n- details/条件索引.md：全if/when・set/addのソース位置\n- data/branch-model.json：将来のテスト用の構造\n- data/coverage.json：条件両側・選択・ラベルの観測回数と代表経路\n\n詳細な解析限界は [[30_検証と要確認]] を参照してください。ゲーム本体、シナリオ、既存ツールには変更を加えません。`);
+md('README.md', 'Obsidianで分岐図を読む', () => `最初に [[00_全体マップ]] または [[00_全体マップ.canvas]] を開いてください。\n\n## 開き方\n\n1. Obsidianの「保管庫としてフォルダを開く」で、このリポジトリのルートを開きます。\n2. ${code(OUT + '/00_全体マップ.md')} をリーディングビューで開きます。Mermaidは標準機能で表示されます。\n3. 自由に配置したい場合は ${code(OUT + '/00_全体マップ.canvas')} を開き、各夜のファイルカードから詳細へ進みます。Canvasも標準機能です。\n\nCanvasのfileはVaultルートからの相対パスです。docs/obsidianだけを別Vaultへコピーする場合は、Canvasの各fileから ${code(OUT + '/')} を取り除いてください（元ソースへの相対リンクも調整が必要）。\n\n## 再生成\n\nリポジトリのルートで実行します。Node.jsの標準ライブラリだけを使用し、ネットワーク接続は不要です。\n\n${'```sh'}\nnode tools/prove-reachability.js\nnode tools/prove-reachability.js --check\nnode tools/generate-branchmaps.js\nnode tools/generate-branchmaps.js --check\nnode tools/check-branchmaps.js\nnode tools/test-branchmaps.js\nnode tools/check-story.js --quiet\nnode tools/simulate.js 3000 0.6\n${'```'}\n\nprove-reachability.js は実エンジンでDFSとリプレイを行い、未到達行の形式証明を出力します。既定予算は状態100000件・正規化キー256MiBです。全木探索が未完了ならその旨と資源停止理由を明記し、未観測だけを根拠に到達不能とはしません。--check は全証拠列と証明を再検証します。証拠のソースハッシュが変わったら、先に証拠を再生成してください。\n\n図の参考ランダム集計は既定が固定シード・3000周。${code('--runs=10000')} で周数を増やせます（生成内容も変わります）。${code('--check')} は既存資料と再生成結果が一致するかを検査し、書き換えません。${code('check-branchmaps.js')} は生成器が使うMermaid構文の制限された文法、CanvasのJSON・ノード・矢印・リンク先、Markdownのローカルリンクを検査します。Mermaid本体での追加検査方法もそのツールの説明にあります。\n\n生成時にCanvasも上書きされます。手で配置を変える場合は別名でコピーしてください。手書きの物語上の説明を変える場合は生成器を編集します。重要な判定／進行関数が変わると、古い注釈を出さないよう生成が停止します。\n\n## 作成ファイル\n\n- 00_全体マップ.md / .canvas：最初に読む俯瞰図\n- nights/第一夜.md〜第五夜.md：進行、合流、選択と状態の表\n- 10_ルートとED.md：人生、ナツメ、人物の糸、追加エピソード、最終ED\n- 20_フラグ依存関係.md：フラグ・数値・メモの設定と参照\n- 30_検証と要確認.md：全20条件側・全20ルート×EDの確定判定、再現手順、探索規模と形式証明\n- details/条件索引.md：全if/when・set/addのソース位置\n- data/branch-model.json：将来のテスト用の構造\n- data/coverage.json：同期ランダムモデルの参考観測回数と代表経路\n- data/reachability.json：実エンジンDFSの規模、形式証明、独立にリプレイ済みの具体的な選択列\n\n詳細な解析限界は [[30_検証と要確認]] を参照してください。ゲーム本体、シナリオ、既存ツールには変更を加えません。`);
 
 for (const [file, content] of files) {
   const full = path.join(ROOT, file);
