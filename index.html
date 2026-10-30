@@ -496,8 +496,8 @@ const TIE_NAMES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8'];
 const DEEP_TIES = ['T7', 'T4', 'T6', 'T3', 'T1', 'N1']; // エピローグで深く描く糸（全体）
 // ルート別の候補（優先順）。DJルートは N1 を必ず描き、残り1本
 const DEEP_BY_ROUTE = { nanami: ['T1', 'T4', 'T7', 'T3'], haruka: ['T6', 'T4', 'T7', 'T3'], natsume: ['T3', 'T7'], alone: ['T7', 'T3', 'T1', 'T4', 'T6'] };
-const DJ_ROUTE_NEED = 9; // 第二夜のナツメの場面を終えた時点の dj
-const DJ_HIGH = 18, CAT_HIGH = 3, CONN_NEED = 4;
+const DJ_ROUTE_NEED = 3; // 第二夜のナツメの場面を終えた時点の dj
+const DJ_HIGH = 16, CAT_HIGH = 3, CONN_NEED = 4;
 const ROUTES = { nanami: 'ふたつめの杏仁豆腐', haruka: 'お月さまの客席', alone: 'ひとりぶんの灯り' };
 const ROUTE_KEY = 'shinyaSoudanRoutes', THREAD_KEY = 'shinyaSoudanThreads', PLAYED_KEY = 'shinyaSoudanPlayed';
 const NIGHT_KANJI = ['', '第一夜', '第二夜', '第三夜', '第四夜', '第五夜'];
@@ -560,7 +560,10 @@ function route() {
   return 'alone';
 }
 // DJ（ナツメ）ルート（第二夜のナツメの場面のあとで確定）
-function djAt2High() { return typeof G.djAt2 === 'number' && G.djAt2 >= DJ_ROUTE_NEED; }
+// 前半の関わりを入口とし、終幕の灯り番にはその後の積み重ねも必要。
+function djAt2High() {
+  return typeof G.djAt2 === 'number' && G.djAt2 >= DJ_ROUTE_NEED;
+}
 function djRoute() { return !!G.res.konbini && djAt2High() && route() === 'alone'; }
 function routeKey() { return djRoute() ? 'natsume' : route(); }
 // 仕事（コースターと桐島／遥ルートのPOP）
