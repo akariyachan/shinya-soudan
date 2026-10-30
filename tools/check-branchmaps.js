@@ -10,10 +10,13 @@ const { pathToFileURL } = require('url');
 const ROOT = path.resolve(__dirname, '..'), DIR = path.join(ROOT, 'docs/obsidian');
 const list = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? list(path.join(dir, e.name)) : [path.join(dir, e.name)]);
 const requirePath = (p, from) => assert(fs.existsSync(p), `リンク切れ: ${from} → ${p}`);
+function requireHeading(destination, heading, from) {
+  if (heading) assert(fs.readFileSync(destination, 'utf8').split('\n').some(line => /^#{1,6} /.test(line) && line.replace(/^#{1,6} /, '') === heading), `${from}: 見出しリンク切れ ${destination}#${heading}`);
+}
 function validateDiagram(text, source) {
   const lines = text.trim().split('\n');
   assert.equal(lines.shift(), 'flowchart TD', `${source}: 未対応の図種`);
-  const ids = new Set(), edges = [], classes = [], defs = new Set();
+  const ids = new Set(), edges = [], classes = [], defs = new Set(), styledEdges = new Set();
   for (const line of lines) {
     const s = line.trim();
     let m;
@@ -22,10 +25,16 @@ function validateDiagram(text, source) {
       assert(m[2].length > 0 && !/[<>]/.test(m[2]), `${source}: 空／未エスケープのラベル`);
     } else if ((m = /^([A-Za-z][A-Za-z0-9_]*) (?:-->|-\.->)(?:\|"([^"|\n]*)"\|)? ([A-Za-z][A-Za-z0-9_]*)$/.exec(s))) edges.push([m[1], m[3]]);
     else if ((m = /^classDef ([A-Za-z][A-Za-z0-9_]*) stroke:#[0-9a-f]{6},stroke-width:[1-9]px;$/.exec(s))) defs.add(m[1]);
+    else if ((m = /^classDef (unreachable) fill:#eeeeee,stroke:#888888,color:#555555,stroke-width:1px,stroke-dasharray:5 5;$/.exec(s))) defs.add(m[1]);
+    else if ((m = /^linkStyle (0|[1-9][0-9]*) stroke:#888888,stroke-width:1px,stroke-dasharray:5 5;$/.exec(s))) {
+      const index = Number(m[1]);
+      assert(!styledEdges.has(index), `${source}: エッジ装飾重複 ${index}`); styledEdges.add(index);
+    }
     else if ((m = /^class ([A-Za-z][A-Za-z0-9_,]*) ([A-Za-z][A-Za-z0-9_]*);$/.exec(s))) classes.push([m[1].split(','), m[2]]);
     else assert.fail(`${source}: Mermaid限定文法外／構文エラー: ${s}`);
   }
   for (const edge of edges) for (const id of edge) assert(ids.has(id), `${source}: 未定義ノード ${id}`);
+  for (const index of styledEdges) assert(index < edges.length, `${source}: 未定義エッジ ${index}`);
   for (const [nodes, name] of classes) { assert(defs.has(name), `${source}: 未定義クラス ${name}`); for (const id of nodes) assert(ids.has(id), `${source}: 未定義ノード ${id}`); }
   return { nodes: ids.size, edges: edges.length };
 }
@@ -63,11 +72,17 @@ async function main() {
       const stats = validateDiagram(block[1], source); diagrams.push({ text: block[1], source, ...stats });
       assert(stats.nodes <= 40, `${source}: ノードが多すぎる（${stats.nodes}）`);
     }
-    for (const m of content.matchAll(/(?<!!)\[[^\]\n]*\]\(([^)]+)\)/g)) if (!/^(https?:|#)/.test(m[1])) requirePath(path.resolve(path.dirname(file), m[1].split('#')[0]), file);
+    for (const m of content.matchAll(/(?<!!)\[[^\]\n]*\]\(([^)]+)\)/g)) if (!/^https?:/.test(m[1])) {
+      const [target, heading] = m[1].split('#'), destination = target ? path.resolve(path.dirname(file), target) : file;
+      requirePath(destination, file); requireHeading(destination, heading, file);
+    }
     for (const m of content.matchAll(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g)) {
       let target = m[1].split('#')[0]; if (!target) continue;
       if (!path.extname(target)) target += '.md';
-      requirePath(path.resolve(path.dirname(file), target), file);
+      const destination = path.resolve(path.dirname(file), target);
+      requirePath(destination, file);
+      const heading = m[1].split('#')[1];
+      requireHeading(destination, heading, file);
     }
   }
   const arg = process.argv.find(a => a.startsWith('--mermaid='));
